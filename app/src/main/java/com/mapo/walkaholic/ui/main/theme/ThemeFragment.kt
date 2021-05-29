@@ -1,13 +1,15 @@
 package com.mapo.walkaholic.ui.main.theme
 
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.Observer
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -18,36 +20,24 @@ import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.repository.MainRepository
 import com.mapo.walkaholic.databinding.FragmentThemeBinding
-import com.mapo.walkaholic.ui.base.BaseSharedFragment
-import com.mapo.walkaholic.ui.base.EventObserver
-import com.mapo.walkaholic.ui.base.ViewModelFactory
+import com.mapo.walkaholic.ui.base.BaseFragment
+import com.mapo.walkaholic.ui.confirmDialog
 import com.mapo.walkaholic.ui.handleApiError
-import com.mapo.walkaholic.ui.snackbar
+import com.mapo.walkaholic.ui.main.map.MapFragmentDirections
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
-class ThemeFragment : BaseSharedFragment<ThemeViewModel, FragmentThemeBinding, MainRepository>() {
+class ThemeFragment : BaseFragment<ThemeViewModel, FragmentThemeBinding, MainRepository>() {
     private lateinit var tabLayout: TabLayout
     private lateinit var viewPager: ViewPager2
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val sharedViewModel : ThemeViewModel by viewModels {
-            ViewModelFactory(getFragmentRepository())
-        }
-        viewModel = sharedViewModel
-        viewModel.showToastEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@ThemeFragment::showToastEvent)
-        )
+    val themeDetailArgs: ThemeFragmentArgs by navArgs()
 
-        viewModel.showSnackbarEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@ThemeFragment::showSnackbarEvent)
-        )
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tabLayout = binding.themeTL
         viewPager = binding.themeVP
-
+        viewModel.getCategoryTheme()
         viewModel.categoryThemeResponse.observe(viewLifecycleOwner, Observer { _categoryThemeResponse ->
             when(_categoryThemeResponse) {
                 is Resource.Success -> {
@@ -59,6 +49,11 @@ class ThemeFragment : BaseSharedFragment<ThemeViewModel, FragmentThemeBinding, M
                             TabLayoutMediator(tabLayout, viewPager) { tab, position ->
                                 tab.text = tabName?.get(position)?.themeName
                             }.attach()
+
+                            // 대쉬보드에서 테마 선택시
+                            tabLayout.getTabAt(themeDetailArgs.themePosition)?.select()
+                            viewPager.currentItem = themeDetailArgs.themePosition
+                            
                             tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                                 override fun onTabSelected(tab: TabLayout.Tab?) {
                                     viewPager.currentItem = tab!!.position
@@ -73,11 +68,15 @@ class ThemeFragment : BaseSharedFragment<ThemeViewModel, FragmentThemeBinding, M
                                 }
                             })
                         }
-                        "400" -> {
-                            // Error
-                        }
                         else -> {
                             // Error
+                            confirmDialog(
+                                _categoryThemeResponse.value.message,
+                                {
+                                    viewModel.getCategoryTheme()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -90,48 +89,21 @@ class ThemeFragment : BaseSharedFragment<ThemeViewModel, FragmentThemeBinding, M
                 }
             }
         })
-        viewModel.getCategoryTheme()
-
-        /*viewModel.themeEnumResponse.observe(viewLifecycleOwner, Observer {
-                when (it) {
-                    is Resource.Success -> {
-                        if (!it.value.error) {
-
-                        }
-                    }
-                    is Resource.Loading -> {
-
-                    }
-                    is Resource.Failure -> {
-                        handleApiError(it)
-                    }
-                }
-        })*/
-        /*viewModel.getThemeEnum()*/
     }
 
-    private fun showToastEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                Toast.makeText(
-                    requireContext(),
-                    contents,
-                    Toast.LENGTH_SHORT
-                ).show()
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                confirmDialog(getString(com.mapo.walkaholic.R.string.err_deny_prev), null, null)
             }
         }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
     }
 
-    private fun showSnackbarEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                requireView().snackbar(contents)
-            }
-        }
+    override fun onDetach() {
+        super.onDetach()
+        callback.remove()
     }
 
     override fun getViewModel() = ThemeViewModel::class.java

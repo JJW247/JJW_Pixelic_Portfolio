@@ -20,7 +20,7 @@ class SplashActivity :
     BaseActivity<SplashViewModel, ActivitySplashscreenBinding, SplashRepository>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // For Manage Activity Lifecycle
-        GlobalApplication.activityList.add(this)
+        GlobalApplication.mActivityList.add(this)
         // Call Parent Function
         super.onCreate(savedInstanceState)
         /*
@@ -39,6 +39,10 @@ class SplashActivity :
             For 2-Way Binding With XML
          */
         binding.viewModel = viewModel
+        /*
+            Call Rest Function in ViewModel
+         */
+        viewModel.getFilenameSplashImage()
         /*
             Observe Resource of Splash Logo Filename
          */
@@ -72,11 +76,15 @@ class SplashActivity :
                                     })
                             }
                         }
-                        "400" -> {
-                            // Error
-                        }
                         else -> {
                             // Error
+                            confirmDialog(
+                                _responseSplash.value.message,
+                                {
+                                    viewModel.getFilenameSplashImage()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -89,15 +97,11 @@ class SplashActivity :
                 }
             }
         })
-        /*
-            Call Rest Function in ViewModel
-         */
-        viewModel.getFilenameSplashImage()
     }
 
     override fun onDestroy() {
         // For Manage Activity Lifecycle
-        GlobalApplication.activityList.remove(this)
+        GlobalApplication.mActivityList.remove(this)
         super.onDestroy()
     }
 

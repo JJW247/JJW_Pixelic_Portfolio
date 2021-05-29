@@ -1,5 +1,7 @@
 package com.mapo.walkaholic.data.repository
 
+import com.kakao.sdk.auth.model.OAuthToken
+import com.kakao.sdk.user.UserApiClient
 import com.mapo.walkaholic.data.UserPreferences
 import com.mapo.walkaholic.data.model.request.LoginRequestBody
 import com.mapo.walkaholic.data.model.request.SignupRequestBody
@@ -9,6 +11,9 @@ class AuthRepository(
     private val api: GuestApi,
     preferences: UserPreferences
 ) : BaseRepository(preferences) {
+
+    private var userId : Long = 0
+
     suspend fun getFilenameLogoImage() = safeApiCall {
         api.getFilenameLogoImage()
     }

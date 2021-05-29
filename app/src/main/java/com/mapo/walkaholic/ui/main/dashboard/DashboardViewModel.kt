@@ -60,16 +60,11 @@ class DashboardViewModel(
     val filenameThemeCategoryImageResponse: LiveData<Resource<FilenameThemeCategoryImageResponse>>
         get() = _filenameThemeCategoryImageResponse
 
-    fun getDash() {
+    fun getUser() {
         progressBarVisibility.set(true)
-        UserApiClient.instance.accessTokenInfo { tokenInfo, error ->
-            viewModelScope.launch {
-                if (error != null) {
-                } else {
-                    _userResponse.value = tokenInfo?.id?.let { mainRepository.getUser(it) }
-                }
-                progressBarVisibility.set(false)
-            }
+        viewModelScope.launch {
+            _userResponse.value = mainRepository.getUser()
+            progressBarVisibility.set(false)
         }
     }
 
@@ -134,17 +129,19 @@ class DashboardViewModel(
         }
     }
 
+    fun getBurnCalorie(walkCount : Int) = (walkCount * 5).toString() + "kcal"
+
     fun getDifferenceTemperature(todayTemperature: String?, yesterdayTemperature: String?): String {
         if (todayTemperature.isNullOrEmpty() || yesterdayTemperature.isNullOrEmpty()) {
             return "오류"
         } else {
             val differenceTemperature = (todayTemperature.toInt() - yesterdayTemperature.toInt())
             if (differenceTemperature > 0) {
-                return "어제보다 ${differenceTemperature.absoluteValue}도 높아요"
+                return "어제보다 ${differenceTemperature.absoluteValue}º 높아요"
             } else if (differenceTemperature == 0) {
                 return "어제같은 날씨에요"
             } else if (differenceTemperature < 0) {
-                return "어제보다 ${differenceTemperature.absoluteValue}도 낮아요"
+                return "어제보다 ${differenceTemperature.absoluteValue}º 낮아요"
             } else {
                 return "오류"
             }

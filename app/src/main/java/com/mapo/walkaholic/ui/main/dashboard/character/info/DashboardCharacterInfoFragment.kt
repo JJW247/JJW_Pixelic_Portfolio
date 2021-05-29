@@ -1,6 +1,7 @@
 package com.mapo.walkaholic.ui.main.dashboard.character.info
 
-import android.graphics.*
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -8,8 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.Observer
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.findNavController
@@ -17,10 +17,8 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import com.mapo.walkaholic.R
 import com.mapo.walkaholic.data.model.ItemInfo
 import com.mapo.walkaholic.data.network.ApisApi
 import com.mapo.walkaholic.data.network.InnerApi
@@ -28,18 +26,16 @@ import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.repository.MainRepository
 import com.mapo.walkaholic.databinding.FragmentDashboardCharacterInfoBinding
-import com.mapo.walkaholic.ui.base.BaseSharedFragment
-import com.mapo.walkaholic.ui.base.EventObserver
-import com.mapo.walkaholic.ui.base.ViewModelFactory
+import com.mapo.walkaholic.ui.alertDialog
+import com.mapo.walkaholic.ui.base.BaseFragment
+import com.mapo.walkaholic.ui.confirmDialog
 import com.mapo.walkaholic.ui.handleApiError
 import com.mapo.walkaholic.ui.main.dashboard.character.CharacterInventorySlotClickListener
-import com.mapo.walkaholic.ui.snackbar
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlin.math.*
 
 class DashboardCharacterInfoFragment :
-    BaseSharedFragment<DashboardCharacterInfoViewModel, FragmentDashboardCharacterInfoBinding, MainRepository>(),
+    BaseFragment<DashboardCharacterInfoViewModel, FragmentDashboardCharacterInfoBinding, MainRepository>(),
     CharacterInventorySlotClickListener {
     companion object {
         private const val PIXELS_PER_METRE = 4
@@ -50,19 +46,6 @@ class DashboardCharacterInfoFragment :
     private var selectedSlotInfoMapHair = mutableMapOf<Int, Pair<Boolean, ItemInfo>>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val sharedViewModel: DashboardCharacterInfoViewModel by viewModels {
-            ViewModelFactory(getFragmentRepository())
-        }
-        viewModel = sharedViewModel
-        viewModel.showToastEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@DashboardCharacterInfoFragment::showToastEvent)
-        )
-
-        viewModel.showSnackbarEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@DashboardCharacterInfoFragment::showSnackbarEvent)
-        )
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
         binding.viewModel = viewModel
@@ -95,6 +78,7 @@ class DashboardCharacterInfoFragment :
             }
         })
         binding.dashCharacterInfoVP.isUserInputEnabled = false
+        viewModel.getUser()
         viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
             when (_userResponse) {
                 is Resource.Success -> {
@@ -209,11 +193,33 @@ class DashboardCharacterInfoFragment :
                                                                                                                         })
                                                                                                             }
                                                                                                         }
-                                                                                                        "400" -> {
-                                                                                                            // Error
-                                                                                                        }
                                                                                                         else -> {
                                                                                                             // Error
+                                                                                                            confirmDialog(
+                                                                                                                _userCharacterPreviewFilenameResponse.value.message,
+                                                                                                                {
+                                                                                                                    viewModel!!.getUserCharacterPreviewFilename(
+                                                                                                                        _userResponse.value.data.first().id,
+                                                                                                                        if (!userCharacterEquipStatus["face"].isNullOrEmpty()) {
+                                                                                                                            userCharacterEquipStatus.get(
+                                                                                                                                "face"
+                                                                                                                            )
+                                                                                                                                .toString()
+                                                                                                                        } else {
+                                                                                                                            ""
+                                                                                                                        },
+                                                                                                                        if (!userCharacterEquipStatus["hair"].isNullOrEmpty()) {
+                                                                                                                            userCharacterEquipStatus.get(
+                                                                                                                                "hair"
+                                                                                                                            )
+                                                                                                                                .toString()
+                                                                                                                        } else {
+                                                                                                                            ""
+                                                                                                                        }
+                                                                                                                    )
+                                                                                                                },
+                                                                                                                "재시도"
+                                                                                                            )
                                                                                                         }
                                                                                                     }
                                                                                                 }
@@ -221,6 +227,7 @@ class DashboardCharacterInfoFragment :
                                                                                                     // Loading
                                                                                                 }
                                                                                                 is Resource.Failure -> {
+                                                                                                    // Network Error
                                                                                                     handleApiError(
                                                                                                         _userCharacterPreviewFilenameResponse
                                                                                                     ) {
@@ -252,21 +259,14 @@ class DashboardCharacterInfoFragment :
                                                                                 }
                                                                             }
                                                                         }
-                                                                        "400" -> {
-                                                                            Toast.makeText(
-                                                                                requireContext(),
-                                                                                getString(R.string.err_user),
-                                                                                Toast.LENGTH_SHORT
-                                                                            ).show()
-                                                                            //logout()
-                                                                        }
                                                                         else -> {
-                                                                            Toast.makeText(
-                                                                                requireContext(),
-                                                                                getString(R.string.err_user),
-                                                                                Toast.LENGTH_SHORT
-                                                                            ).show()
-                                                                            //logout()
+                                                                            confirmDialog(
+                                                                                _expInformationResponse.value.message,
+                                                                                {
+                                                                                    viewModel!!.getExpInformation(_userResponse.value.data.first().id)
+                                                                                },
+                                                                                "재시도"
+                                                                            )
                                                                         }
                                                                     }
                                                                 }
@@ -274,13 +274,7 @@ class DashboardCharacterInfoFragment :
                                                                     // Network Error
                                                                     handleApiError(
                                                                         _expInformationResponse
-                                                                    )
-                                                                    Toast.makeText(
-                                                                        requireContext(),
-                                                                        getString(R.string.err_user),
-                                                                        Toast.LENGTH_SHORT
-                                                                    ).show()
-                                                                    //logout()
+                                                                    ) { viewModel!!.getExpInformation(_userResponse.value.data.first().id) }
                                                                 }
                                                             }
                                                         })
@@ -304,13 +298,82 @@ class DashboardCharacterInfoFragment :
                                                                 filteredSelectedHair.values.first().second.itemId
                                                             }
                                                         )
+                                                        viewModel.equipItemResponse.observe(
+                                                            viewLifecycleOwner,
+                                                            Observer { _equipItemResponse ->
+                                                                when (_equipItemResponse) {
+                                                                    is Resource.Success -> {
+                                                                        when (_equipItemResponse.value.code) {
+                                                                            "200" -> {
+                                                                                showToastEvent(_equipItemResponse.value.message)
+                                                                                val navDirection: NavDirections? =
+                                                                                    DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoSelf()
+                                                                                if (navDirection != null) {
+                                                                                    findNavController().navigate(navDirection)
+                                                                                }
+                                                                            }
+                                                                            else -> {
+                                                                                // Error
+                                                                                confirmDialog(
+                                                                                    _equipItemResponse.value.message,
+                                                                                    {
+                                                                                        viewModel.equipItem(
+                                                                                            _userResponse.value.data.first().id,
+                                                                                            if (filteredSelectedFace.filter { faceValue -> faceValue.value.first }
+                                                                                                    .isNullOrEmpty()) {
+                                                                                                null
+                                                                                            } else {
+                                                                                                filteredSelectedFace.values.first().second.itemId
+                                                                                            },
+                                                                                            if (filteredSelectedHair.filter { hairValue -> hairValue.value.first }
+                                                                                                    .isNullOrEmpty()) {
+                                                                                                null
+                                                                                            } else {
+                                                                                                filteredSelectedHair.values.first().second.itemId
+                                                                                            }
+                                                                                        )
+                                                                                    },
+                                                                                    "재시도"
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    is Resource.Loading -> {
+                                                                        // Loading
+                                                                    }
+                                                                    is Resource.Failure -> {
+                                                                        // Network Error
+                                                                        handleApiError(_equipItemResponse) { viewModel.equipItem(
+                                                                            _userResponse.value.data.first().id,
+                                                                            if (filteredSelectedFace.filter { faceValue -> faceValue.value.first }
+                                                                                    .isNullOrEmpty()) {
+                                                                                null
+                                                                            } else {
+                                                                                filteredSelectedFace.values.first().second.itemId
+                                                                            },
+                                                                            if (filteredSelectedHair.filter { hairValue -> hairValue.value.first }
+                                                                                    .isNullOrEmpty()) {
+                                                                                null
+                                                                            } else {
+                                                                                filteredSelectedHair.values.first().second.itemId
+                                                                            }
+                                                                        ) }
+                                                                    }
+                                                                }
+                                                            })
                                                     }
-                                                }
-                                                "400" -> {
-                                                    // Error
                                                 }
                                                 else -> {
                                                     // Error
+                                                    confirmDialog(
+                                                        _userCharacterEquipStatusResponse.value.message,
+                                                        {
+                                                            viewModel.getUserCharacterEquipStatus(
+                                                                _userResponse.value.data.first().id
+                                                            )
+                                                        },
+                                                        "재시도"
+                                                    )
                                                 }
                                             }
                                         }
@@ -328,22 +391,14 @@ class DashboardCharacterInfoFragment :
                                     }
                                 })
                         }
-                        "400" -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_user),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            //logout()
-                            //requireActivity().startNewActivity(AuthActivity::class.java)
-                        }
                         else -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_user),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            //logout()
+                            confirmDialog(
+                                _userResponse.value.message,
+                                {
+                                    viewModel.getUser()
+                                },
+                                "재시도"
+                            )
                             //requireActivity().startNewActivity(AuthActivity::class.java)
                         }
                     }
@@ -351,81 +406,11 @@ class DashboardCharacterInfoFragment :
                 is Resource.Loading -> {
                 }
                 is Resource.Failure -> {
-                    handleApiError(_userResponse)
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.err_user),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    //logout()
+                    handleApiError(_userResponse) { viewModel.getUser() }
                     //requireActivity().startNewActivity(AuthActivity::class.java)
                 }
             }
         })
-        viewModel.equipItemResponse.observe(
-            viewLifecycleOwner,
-            Observer { _equipItemResponse ->
-                when (_equipItemResponse) {
-                    is Resource.Success -> {
-                        when (_equipItemResponse.value.code) {
-                            "200" -> {
-                                showToastEvent(_equipItemResponse.value.message)
-                                val navDirection: NavDirections? =
-                                    DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoSelf()
-                                if (navDirection != null) {
-                                    findNavController().navigate(navDirection)
-                                }
-                            }
-                            "400" -> {
-                                // Error
-                                showToastEvent(_equipItemResponse.value.message)
-                            }
-                            else -> {
-                                // Error
-                                showToastEvent(_equipItemResponse.value.message)
-                            }
-                        }
-                    }
-                    is Resource.Loading -> {
-                        // Loading
-                    }
-                    is Resource.Failure -> {
-                        handleApiError(_equipItemResponse)
-                    }
-                }
-            })
-        viewModel.deleteItemResponse.observe(viewLifecycleOwner, Observer { _deleteItemResponse ->
-            when(_deleteItemResponse) {
-                is Resource.Success -> {
-                    when(_deleteItemResponse.value.code) {
-                        "200" -> {
-                            showToastEvent(_deleteItemResponse.value.message)
-                            val navDirection: NavDirections? =
-                                DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoSelf()
-                            if (navDirection != null) {
-                                findNavController().navigate(navDirection)
-                            }
-                        }
-                        "400" -> {
-                            // Error
-                            showToastEvent(_deleteItemResponse.value.message)
-                        }
-                        else -> {
-                            // Error
-                            showToastEvent(_deleteItemResponse.value.message)
-                        }
-                    }
-                }
-                is Resource.Loading -> {
-                    // Loading
-                }
-                is Resource.Failure -> {
-                    // Network Error
-                    handleApiError(_deleteItemResponse)
-                }
-            }
-        })
-        viewModel.getDash()
         binding.dashCharacterInfoIvShop.setOnClickListener {
             val navDirection: NavDirections? =
                 DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoToActionBnvDashCharacterShop()
@@ -438,34 +423,6 @@ class DashboardCharacterInfoFragment :
                 DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoToActionBnvDashCharacterShop()
             if (navDirection != null) {
                 findNavController().navigate(navDirection)
-            }
-        }
-    }
-
-    private fun showToastEvent(contents: String) {
-        when (contents) {
-            null -> {
-            }
-            "" -> {
-            }
-            else -> {
-                Toast.makeText(
-                    requireContext(),
-                    contents,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    private fun showSnackbarEvent(contents: String) {
-        when (contents) {
-            null -> {
-            }
-            "" -> {
-            }
-            else -> {
-                requireView().snackbar(contents)
             }
         }
     }
@@ -486,12 +443,14 @@ class DashboardCharacterInfoFragment :
     }
 
     override fun onItemClick(
-        selectedSlotInfoMap: MutableMap<Int, Pair<Boolean, ItemInfo>>, isClear: Boolean
+        selectedSlotInfoMap: MutableMap<Int, Pair<Boolean, ItemInfo>>, isClear: Boolean, selectedReverseInfoMap: MutableMap<Int, Pair<Boolean, ItemInfo>>
     ) {
         if (selectedSlotInfoMap[0]?.second?.itemType == "hair") {
             selectedSlotInfoMapHair = selectedSlotInfoMap
+            selectedSlotInfoMapFace = selectedReverseInfoMap
         } else if (selectedSlotInfoMap[0]?.second?.itemType == "face") {
             selectedSlotInfoMapFace = selectedSlotInfoMap
+            selectedSlotInfoMapHair = selectedReverseInfoMap
         }
         viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
             when (_userResponse) {
@@ -529,11 +488,15 @@ class DashboardCharacterInfoFragment :
                                                         }
                                                     )
                                                 }
-                                                "400" -> {
-                                                    // Error
-                                                }
                                                 else -> {
                                                     // Error
+                                                    confirmDialog(
+                                                        _userCharacterEquipStatusResponse.value.message,
+                                                        {
+                                                            viewModel.getUserCharacterEquipStatus(_userResponse.value.data.first().id)
+                                                        },
+                                                        "재시도"
+                                                    )
                                                 }
                                             }
                                         }
@@ -542,16 +505,20 @@ class DashboardCharacterInfoFragment :
                                         }
                                         is Resource.Failure -> {
                                             // Network Error
-                                            handleApiError(_userCharacterEquipStatusResponse)
+                                            handleApiError(_userCharacterEquipStatusResponse) { viewModel.getUserCharacterEquipStatus(_userResponse.value.data.first().id) }
                                         }
                                     }
                                 })
                         }
-                        "400" -> {
-                            // Error
-                        }
                         else -> {
                             // Error
+                            confirmDialog(
+                                _userResponse.value.message,
+                                {
+                                    viewModel.getUser()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -560,36 +527,94 @@ class DashboardCharacterInfoFragment :
                 }
                 is Resource.Failure -> {
                     // Network Error
-                    handleApiError(_userResponse)
+                    handleApiError(_userResponse) { viewModel.getUser() }
                 }
             }
         })
     }
 
-    override fun discardItem(itemId: Int) {
-        viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
-            when (_userResponse) {
-                is Resource.Success -> {
-                    when (_userResponse.value.code) {
-                        "200" -> {
-                            viewModel.deleteItem(_userResponse.value.data.first().id, itemId.toString())
-                        }
-                        "400" -> {
-                            // Error
-                        }
-                        else -> {
-                            // Error
+    override fun discardItem(itemId: Int, itemName: String) {
+        val onClickYes: () -> Unit? = {
+            viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
+                when (_userResponse) {
+                    is Resource.Success -> {
+                        when (_userResponse.value.code) {
+                            "200" -> {
+                                viewModel.deleteItem(_userResponse.value.data.first().id, itemId.toString())
+                                viewModel.deleteItemResponse.observe(viewLifecycleOwner, Observer { _deleteItemResponse ->
+                                    when(_deleteItemResponse) {
+                                        is Resource.Success -> {
+                                            when(_deleteItemResponse.value.code) {
+                                                "200" -> {
+                                                    showToastEvent(_deleteItemResponse.value.message)
+                                                    val navDirection: NavDirections? =
+                                                        DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoSelf()
+                                                    if (navDirection != null) {
+                                                        findNavController().navigate(navDirection)
+                                                    }
+                                                }
+                                                else -> {
+                                                    // Error
+                                                    confirmDialog(
+                                                        _deleteItemResponse.value.message,
+                                                        {
+                                                            viewModel.deleteItem(_userResponse.value.data.first().id, itemId.toString())
+                                                        },
+                                                        "재시도"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        is Resource.Loading -> {
+                                            // Loading
+                                        }
+                                        is Resource.Failure -> {
+                                            // Network Error
+                                            handleApiError(_deleteItemResponse) { viewModel.deleteItem(_userResponse.value.data.first().id, itemId.toString()) }
+                                        }
+                                    }
+                                })
+                            }
+                            else -> {
+                                // Error
+                                confirmDialog(
+                                    _userResponse.value.message,
+                                    {
+                                        viewModel.getUser()
+                                    },
+                                    "재시도"
+                                )
+                            }
                         }
                     }
+                    is Resource.Loading -> {
+                        // Loading
+                    }
+                    is Resource.Failure -> {
+                        // Network Error
+                        handleApiError(_userResponse) { viewModel.getUser() }
+                    }
                 }
-                is Resource.Loading -> {
-                    // Loading
-                }
-                is Resource.Failure -> {
-                    // Network Error
-                    handleApiError(_userResponse)
-                }
+            })
+        }
+        alertDialog("$itemName 아이템을 버리시겠습니까?", null, onClickYes as (() -> Unit))
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val navDirection: NavDirections? = DashboardCharacterInfoFragmentDirections.actionActionBnvDashCharacterInfoToActionBnvDash()
+                    if (navDirection != null) {
+                        findNavController().navigate(navDirection)
+                    }
             }
-        })
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback.remove()
     }
 }

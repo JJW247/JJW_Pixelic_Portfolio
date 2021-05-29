@@ -1,21 +1,21 @@
 package com.mapo.walkaholic.data.repository
 
+import com.kakao.sdk.user.UserApiClient
 import com.mapo.walkaholic.data.UserPreferences
 import com.mapo.walkaholic.data.model.request.BuyItemRequestBody
 import com.mapo.walkaholic.data.model.request.EquipItemRequestBody
 import com.mapo.walkaholic.data.model.request.MapRequestBody
+import com.mapo.walkaholic.data.model.request.WalkRewardRequestBody
 import com.mapo.walkaholic.data.model.response.TodayWeatherResponse
 import com.mapo.walkaholic.data.model.response.YesterdayWeatherResponse
 import com.mapo.walkaholic.data.network.ApisApi
-import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.network.InnerApi
 import com.mapo.walkaholic.data.network.Resource
-import com.naver.maps.map.NaverMap
+import com.mapo.walkaholic.data.network.SgisApi
 import retrofit2.http.Body
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class MainRepository(
     private val api: InnerApi,
@@ -33,22 +33,31 @@ class MainRepository(
         private const val APIS_WEATHER_DATE_FORMAT = "yyyyMMdd"
         private const val APIS_WEATHER_TIME_FORMAT = "HHmm"
         private const val TIME_ZONE = "Asia/Seoul"
-        private const val SGIS_API_CONSUMER_KEY = "67ad057e051144d2a09a"
-        private const val SGIS_API_SECRET_KEY = "5b4ac1c4c89c4ad8bc41"
+        private const val SGIS_API_CONSUMER_KEY = "70ae3222d3e94dd5a9e5"
+        private const val SGIS_API_SECRET_KEY = "638a9b5ec41b40f2ba5a"
         private const val SGIS_EPSG_WGS = "4326"
         private const val SGIS_EPSG_BESSEL = "5181"
     }
 
-    private var mMap: NaverMap? = null
+    private var userId : String = ""
 
-    fun setNaverMap(mMap: NaverMap) {
-        this.mMap = mMap
+    suspend fun getUser() = safeApiCall {
+        //setUser()
+        //api.getUser(userId)
+
+        api.getUser("1693276776")
     }
 
-    fun getNaverMap() = this.mMap
-
-    suspend fun getUser(userId: Long) = safeApiCall {
-        api.getUser(userId.toString())
+    private fun setUser() {
+        UserApiClient.instance.accessTokenInfo { tokenInfo, error ->
+            if (error != null) {
+                // Fail
+            }
+            else if (tokenInfo != null) {
+                // Success
+                userId = tokenInfo.id.toString()
+            }
+        }
     }
 
     suspend fun getUserCharacterFilename(userId: Long) = safeApiCall {
@@ -64,7 +73,6 @@ class MainRepository(
         faceItemId: String,
         headItemId: String
     ) = safeApiCall {
-
         api.getUserCharacterPreviewFilename(
             userId.toString(),
             if (faceItemId.isEmpty()) {
@@ -189,7 +197,7 @@ class MainRepository(
     suspend fun equipItem(userId: Long, faceItemId: Int?, hairItemId: Int?) = safeApiCall {
         api.equipItem(
             userId.toString(),
-            EquipItemRequestBody(faceItemId, hairItemId)
+            EquipItemRequestBody(faceItemId ?: 0, hairItemId ?: 0)
         )
     }
 
@@ -197,44 +205,73 @@ class MainRepository(
         api.deleteItem(userId.toString(), itemId)
     }
 
-    suspend fun getCalendarDate(userId: Long, walkDate: String) = safeApiCall {
-        api.getCalendarDate(userId, walkDate)
+    suspend fun getWalkRecord(userId: Long, walkDate: String) = safeApiCall {
+        api.getWalkRecord(userId.toString(), walkDate)
     }
 
     suspend fun getCalendarMonth(userId: Long, walkMonth: String) = safeApiCall {
         api.getCalendarMonth(userId, walkMonth)
     }
 
-    suspend fun getTheme(themeCode: String) = safeApiCall {
-        api.getTheme(themeCode)
+    suspend fun getTheme(position: Int) = safeApiCall {
+        api.getTheme(
+            when (position) {
+                0 -> "001"
+                1 -> "002"
+                2 -> "003"
+                else -> ""
+            }
+        )
     }
 
-    suspend fun getMissionCondition(missionID: String) = safeApiCall {
-        api.getMissionCondition(missionID)
+    suspend fun getMission(userId: Long, missionType: Int) = safeApiCall {
+        api.getMission(userId.toString(), missionType.toString())
     }
 
-    suspend fun getMissionProgress(missionID: String, conditionId: String) = safeApiCall {
-        api.getMissionProgress(missionID, conditionId)
+    suspend fun getMissionReward(userId: Long, missionId: String) = safeApiCall {
+        api.getMissionReward(userId.toString(), missionId)
     }
 
-    suspend fun getRanking(rankingId: String) = safeApiCall {
-        api.getRanking(rankingId)
+    suspend fun getThemeCourse(id: Int) = safeApiCall {
+        api.getThemeCourse(id.toString())
+    }
+
+    suspend fun getThemeCourseRoute(id: Int) = safeApiCall {
+        api.getThemeCourseRoute(id.toString())
+    }
+
+    suspend fun getRanking(position: Int) = safeApiCall {
+        api.getRanking(position)
+    }
+
+    suspend fun getMonthRanking(userId: Long) = safeApiCall {
+        api.getMonthRanking(userId.toString())
+    }
+
+    suspend fun getAccumulateRanking(userId: Long) = safeApiCall {
+        api.getAccumulateRanking(userId.toString())
     }
 
     suspend fun getPoints(@Body body: MapRequestBody) = safeApiCall {
         api.getPoints(body)
     }
 
-    suspend fun getFavoritePath(userId: Long, id: String) = safeApiCall {
-        api.getFavoritePath(userId, id)
+    suspend fun getFavoritePath(userId: Long, position: Int) = safeApiCall {
+        api.getFavoritePath(
+            userId, when (position) {
+                0 -> "00"
+                1 -> "01"
+                else -> ""
+            }
+        )
     }
 
-
-/*    suspend fun getMissionDaily(missionID:String) = safeApiCall {
-        api.getMissionDaily(missionID)
+    suspend fun getMarker(type:Int, latitude: String, longitude: String) = safeApiCall {
+        api.getMarker(type.toString(), latitude, longitude)
     }
 
-    suspend fun getMissionWeekly(missionID:String) = safeApiCall {
-        api.getMissionWeekly(missionID)
-    }*/
+    suspend fun setReward(userId: Long, walkCount : Int) = safeApiCall {
+        api.setReward(userId.toString(), WalkRewardRequestBody(walkCount.toLong()))
+    }
+
 }

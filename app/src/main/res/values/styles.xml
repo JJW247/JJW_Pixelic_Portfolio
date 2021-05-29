@@ -22,6 +22,7 @@
         <item name="colorOnError">@color/mdWhite1000</item>
         <item name="android:statusBarColor">#00000000</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:splitMotionEvents">false</item>
     </style>
     <!-- Auth Screen Theme -->
     <style name="Theme.AuthTheme" parent="Theme.App">
@@ -37,7 +38,7 @@
     </style>
     <!-- Splash Screen Theme -->
     <style name="Theme.SplashTheme" parent="Theme.App">
-        <item name="android:background">@color/mdWhite1000</item>
+        <item name="android:background">#F48F3D</item>
         <item name="android:windowTranslucentNavigation">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowFullscreen">true</item>
@@ -89,7 +90,7 @@
     <style name="TabText" parent="@android:style/TextAppearance.Widget.TabWidget">
         <item name="fontFamily">@font/noto_sans_bold</item>
         <item name="android:fontFamily">@font/noto_sans_bold</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     <!-- Snack Bar Style -->

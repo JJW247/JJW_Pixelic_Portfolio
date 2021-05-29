@@ -1,12 +1,13 @@
 package com.mapo.walkaholic.ui.main.challenge
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
+import androidx.activity.OnBackPressedCallback
+import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -16,31 +17,20 @@ import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.repository.MainRepository
 import com.mapo.walkaholic.databinding.FragmentChallengeBinding
 import com.mapo.walkaholic.ui.base.BaseFragment
-import com.mapo.walkaholic.ui.base.BaseSharedFragment
-import com.mapo.walkaholic.ui.base.EventObserver
-import com.mapo.walkaholic.ui.base.ViewModelFactory
-import com.mapo.walkaholic.ui.snackbar
+import com.mapo.walkaholic.ui.confirmDialog
+import com.mapo.walkaholic.ui.main.challenge.mission.ChallengeDetailMissionListener
+import com.mapo.walkaholic.ui.main.map.MapFragmentArgs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
-class ChallengeFragment : BaseSharedFragment<ChallengeViewModel, FragmentChallengeBinding, MainRepository>() {
+class ChallengeFragment : BaseFragment<ChallengeViewModel, FragmentChallengeBinding, MainRepository>()
+{
     private lateinit var tabLayout: TabLayout
     private lateinit var viewPager: ViewPager2
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val sharedViewModel : ChallengeViewModel by viewModels {
-            ViewModelFactory(getFragmentRepository())
-        }
-        viewModel = sharedViewModel
-        viewModel.showToastEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@ChallengeFragment::showToastEvent)
-        )
+    val challengeArgs: ChallengeFragmentArgs by navArgs()
 
-        viewModel.showSnackbarEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@ChallengeFragment::showSnackbarEvent)
-        )
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tabLayout = binding.challengeTL
         viewPager = binding.challengeVP
@@ -53,6 +43,12 @@ class ChallengeFragment : BaseSharedFragment<ChallengeViewModel, FragmentChallen
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = tabName?.get(position)
         }.attach()
+
+        Log.e("challengePosition", challengeArgs.idChallenge.toString())
+
+        /*tabLayout.getTabAt(challengeArgs.idChallenge)?.select()
+        viewPager.currentItem = challengeArgs.idChallenge*/
+
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 viewPager.currentItem = tab!!.position
@@ -66,30 +62,47 @@ class ChallengeFragment : BaseSharedFragment<ChallengeViewModel, FragmentChallen
 
             }
         })
+        /*when(challengeArgs.idChallenge) {
+            0 -> {
+                val currentTab = tabLayout.getTabAt(0)
+                if(currentTab != null) {
+                    currentTab.select()
+                    viewPager.currentItem = 0
+                }
+            }
+            1 -> {
+                val currentTab = tabLayout.getTabAt(1)
+                if(currentTab != null) {
+                    currentTab.select()
+                    viewPager.currentItem = 1
+                }
+            }
+            2 -> {
+                val currentTab = tabLayout.getTabAt(2)
+                if(currentTab != null) {
+                    currentTab.select()
+                    viewPager.currentItem = 2
+                }
+            }
+            else -> {
+                // Never Occur
+            }
+        }*/
     }
 
-    private fun showToastEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                Toast.makeText(
-                    requireContext(),
-                    contents,
-                    Toast.LENGTH_SHORT
-                ).show()
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                confirmDialog(getString(com.mapo.walkaholic.R.string.err_deny_prev), null, null)
             }
         }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
     }
 
-    private fun showSnackbarEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                requireView().snackbar(contents)
-            }
-        }
+    override fun onDetach() {
+        super.onDetach()
+        callback.remove()
     }
 
     override fun getViewModel() = ChallengeViewModel::class.java

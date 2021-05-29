@@ -1,27 +1,26 @@
 package com.mapo.walkaholic.ui.base
 
 import android.app.Activity
-import android.content.ContentValues
 import android.os.Bundle
-import android.util.Log
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.findNavController
 import androidx.viewbinding.ViewBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import com.mapo.walkaholic.data.UserPreferences
 import com.mapo.walkaholic.data.network.RemoteDataSource
 import com.mapo.walkaholic.data.repository.BaseRepository
+import com.mapo.walkaholic.ui.alertDialog
 import com.mapo.walkaholic.ui.auth.AuthActivity
-import com.mapo.walkaholic.ui.global.GlobalApplication
-import com.mapo.walkaholic.ui.snackbar
+import com.mapo.walkaholic.ui.main.dashboard.DashboardFragmentDirections
 import com.mapo.walkaholic.ui.startNewActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -30,7 +29,7 @@ abstract class BaseFragment<VM : BaseViewModel, B : ViewBinding, R : BaseReposit
     protected lateinit var userPreferences: UserPreferences
     protected lateinit var binding: B
     protected lateinit var viewModel: VM
-    private lateinit var callback: OnBackPressedCallback
+    protected lateinit var callback: OnBackPressedCallback
     protected val remoteDataSource = RemoteDataSource()
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,7 +56,7 @@ abstract class BaseFragment<VM : BaseViewModel, B : ViewBinding, R : BaseReposit
         return binding.root
     }
 
-    private fun showToastEvent(contents: String) {
+    fun showToastEvent(contents: String) {
         when (contents) {
             null -> {
             }
@@ -80,7 +79,7 @@ abstract class BaseFragment<VM : BaseViewModel, B : ViewBinding, R : BaseReposit
             "" -> {
             }
             else -> {
-                requireView().snackbar(contents)
+                /*requireView().snackbar(contents)*/
             }
         }
     }
@@ -89,6 +88,10 @@ abstract class BaseFragment<VM : BaseViewModel, B : ViewBinding, R : BaseReposit
         viewModel.logout()
         userPreferences.removeJwtToken()
         requireActivity().startNewActivity(AuthActivity::class.java as Class<Activity>)
+    }
+
+    fun deleteIsLocationGranted() = lifecycleScope.launch {
+        userPreferences.removeIsLocationGranted()
     }
 
     abstract fun getViewModel(): Class<VM>

@@ -1,179 +1,398 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <com.naver.maps.map.MapView
-        android:id="@+id/mapView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <data>
+
+        <import type="android.view.View" />
+
+        <variable
+            name="viewModel"
+            type="com.mapo.walkaholic.ui.main.map.MapViewModel" />
+
+        <variable
+            name="isWalk"
+            type="Boolean" />
+
+        <variable
+            name="themeCourse"
+            type="com.mapo.walkaholic.data.model.response.ThemeCourseResponse.DataThemeCourse" />
+
+        <variable
+            name="walkNum"
+            type="String" />
+
+        <variable
+            name="walkTime"
+            type="String" />
+    </data>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp">
+        android:layout_height="match_parent">
+
+        <com.naver.maps.map.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <FrameLayout
+            android:id="@+id/map"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp">
+
+            <LinearLayout
+                android:id="@+id/mapWalkControllerLayout"
+                android:layout_width="120dp"
+                android:layout_height="44dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/box_map_corner_b3ffffff_16dp"
+                android:gravity="center_horizontal|center_vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/mapIvWalkStart"
+                    android:layout_width="18dp"
+                    android:layout_height="23dp"
+                    android:src="@drawable/ic_walk_start" />
+            </LinearLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/mapWalkControllerLayout2"
+                android:layout_width="280dp"
+                android:layout_height="44dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/box_map_corner_b3ffffff_16dp"
+                android:gravity="center_horizontal|center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/mapIvWalkPause"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginLeft="31dp"
+                    android:src="@drawable/ic_walk_pause"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    style="@style/font_black_20_one"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{walkTime}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:id="@+id/mapIvWalkStop"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginRight="31dp"
+                    android:src="@drawable/ic_walk_stop"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </FrameLayout>
 
         <LinearLayout
-            android:layout_width="120dp"
-            android:layout_height="44dp"
-            android:layout_gravity="top|center_horizontal"
-            android:background="@drawable/box_map_corner_b3ffffff_16dp"
-            android:gravity="center_horizontal|center_vertical"
+            android:id="@+id/mapNavigationLayout"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:orientation="vertical"
             android:visibility="gone">
 
-            <ImageView
-                android:id="@+id/mapIvWalkStart"
-                android:layout_width="18dp"
-                android:layout_height="23dp"
-                android:src="@drawable/ic_walk_start" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/box_dashboard_uppercorner_white"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <TextView
+                    style="@style/font_semi_bold_16_one"
+                    android:id="@+id/mapTvWalkRecord"
+                    android:layout_width="120dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="산책기록" />
+
+                <TextView
+                    style="@style/font_semi_bold_16_one"
+                    android:id="@+id/mapTvFacilities"
+                    android:layout_width="120dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="편의시설" />
+
+                <TextView
+                    style="@style/font_semi_bold_16_one"
+                    android:id="@+id/mapTvCourse"
+                    android:layout_width="120dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:text="코스추천" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:background="@drawable/box_dashboard_uppercorner_white"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <View
+                    android:id="@+id/mapViewWalkRecord"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:layout_weight="1" />
+
+                <View
+                    android:id="@+id/mapViewFacilities"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:layout_weight="1" />
+
+                <View
+                    android:id="@+id/mapViewCourse"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mapNavigationLayoutWalkRecord"
+                android:layout_width="match_parent"
+                android:layout_height="104dp"
+                android:background="#FFFFFFFF"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:weightSum="3">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/font_black_30_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0" />
+
+                    <TextView
+                        style="@style/font_semi_bold_12_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="거리(km)"
+                        android:textColor="@color/h3" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/font_black_30_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0" />
+
+                    <TextView
+                        style="@style/font_semi_bold_12_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="칼로리"
+                        android:textColor="@color/h3" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/font_black_30_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{walkNum}"
+                        android:textColor="@color/color689f38" />
+
+                    <TextView
+                        style="@style/font_semi_bold_12_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="걸음수"
+                        android:textColor="@color/h3" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mapNavigationLayoutFacilities"
+                android:layout_width="match_parent"
+                android:layout_height="104dp"
+                android:background="#FFFFFFFF"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/mapRVFacilities"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="22dp"
+                    android:paddingHorizontal="24dp"
+                    tools:listitem="@layout/item_map_facilities" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mapNavigationLayoutCourse"
+                android:layout_width="match_parent"
+                android:layout_height="104dp"
+                android:background="#FFFFFFFF"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="12dp" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="280dp"
-            android:layout_height="44dp"
-            android:layout_gravity="top|center_horizontal"
-            android:background="@drawable/box_map_corner_b3ffffff_16dp"
-            android:gravity="center_horizontal|center_vertical"
-            android:orientation="horizontal"
-            android:visibility="visible">
+        <LinearLayout
+            android:id="@+id/mapThemeCourseLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:minHeight="221.36dp"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <ImageView
-                android:id="@+id/mapIvWalkPause"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_marginLeft="31dp"
-                android:src="@drawable/ic_walk_pause"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="34.5dp"
+                android:background="@drawable/box_dashboard_uppercorner_f9a25b"
+                android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    style="@style/font_semi_bold_16_one"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="20dp"
+                    android:text="@{themeCourse.courseName}"
+                    android:textColor="@color/mdWhite1000"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    style="@style/font_black_12_one"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="20dp"
+                    android:text='@{themeCourse.courseDistance + "KM"}'
+                    android:textColor="@color/mdWhite1000"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:background="#F5F4F3" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="00:00:30"
-                android:textColor="#666258"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:background="@color/mdWhite1000"
+                android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/mapIvWalkStop"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_marginRight="31dp"
-                android:src="@drawable/ic_walk_stop"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginTop="10dp"
+                    android:minHeight="184.86dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/font_semi_bold_12_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text='@{"소요시간 " + themeCourse.courseTime}'
+                        android:textColor="#9B9790"
+                        app:full_text='@{"소요시간 " + themeCourse.courseTime}'
+                        app:span_color="@{@color/colorf37520}"
+                        app:span_text="@{themeCourse.courseTime}"/>
+
+                    <TextView
+                        style="@style/font_semi_bold_10_one"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="10dp"
+                        android:text="@{themeCourse.courseRouteInfo}"
+                        android:textColor="@color/h4" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="#F5F4F3" />
+
+                    <TextView
+                        style="@style/font_semi_bold_12_two"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:text="@{themeCourse.courseContents}" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        style="@style/font_semi_bold_16_one"
+                        android:id="@+id/mapBtnFavoriteCourse"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="24dp"
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/box_dashboard_corner_outline_f9a25b"
+                        android:text="찜하기"
+                        android:textColor="#F9A25B" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_gravity="bottom|center_horizontal"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:background="@drawable/box_dashboard_uppercorner_white"
-            android:orientation="horizontal"
-            android:weightSum="3">
-
-            <TextView
-                android:layout_width="120dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_horizontal|center_vertical"
-                android:text="산책기록"
-                android:textColor="#F37520"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="120dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_horizontal|center_vertical"
-                android:text="편의시설"
-                android:textColor="#E3E0DB"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="120dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_horizontal|center_vertical"
-                android:text="코스추천"
-                android:textColor="#E3E0DB"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@drawable/box_dashboard_uppercorner_white"
-            android:orientation="horizontal"
-            android:weightSum="3">
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="2dp"
-                android:layout_weight="1"
-                android:background="#F37520" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="2dp"
-                android:layout_weight="1"
-                android:background="#E3E0DB" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="2dp"
-                android:layout_weight="1"
-                android:background="#E3E0DB" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mapLayoutWalkRecord"
-            android:layout_width="match_parent"
-            android:layout_height="104dp"
-            android:background="#FFFFFFFF"
-            android:orientation="horizontal"
-            android:visibility="visible">
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mapLayoutFacilities"
-            android:layout_width="match_parent"
-            android:layout_height="104dp"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mapLayoutCourse"
-            android:layout_width="match_parent"
-            android:layout_height="104dp"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-</FrameLayout>
+</layout>

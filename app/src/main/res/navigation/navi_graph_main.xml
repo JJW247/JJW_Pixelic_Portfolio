@@ -9,6 +9,10 @@
         android:id="@+id/actionBnvDash"
         android:name="com.mapo.walkaholic.ui.main.dashboard.DashboardFragment"
         tools:layout="@layout/fragment_dashboard">
+        <argument
+            android:name="locationProvider"
+            android:defaultValue=""
+            app:argType="string" />
         <action
             android:id="@+id/action_actionBnvDash_to_actionBnvDashWalkRecord"
             app:destination="@id/actionBnvDashWalkRecord"
@@ -37,6 +41,37 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_actionBnvDash_self"
+            app:destination="@id/actionBnvDash"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim">
+            <argument
+                android:name="locationProvider"
+                app:argType="string" />
+        </action>
+
+        <action
+            android:id="@+id/action_actionBnvDash_to_actionBnvDashWeatherDetail"
+            app:destination="@id/actionBnvDashWeatherDetail"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+
+        <action
+            android:id="@+id/action_actionBnvDash_to_actionBnvThemeDetail"
+            app:destination="@id/actionBnvTheme"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim">
+            <argument
+                android:name="themePosition"
+                app:argType="integer"/>
+        </action>
     </fragment>
 
     <fragment
@@ -66,6 +101,13 @@
         <action
             android:id="@+id/action_actionBnvDashCharacterInfo_self"
             app:destination="@id/actionBnvDashCharacterInfo" />
+        <action
+            android:id="@+id/action_actionBnvDashCharacterInfo_to_actionBnvDash"
+            app:destination="@id/actionBnvDash"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
     </fragment>
 
     <fragment
@@ -88,24 +130,90 @@
         android:id="@+id/actionBnvDashWalkRecord"
         android:name="com.mapo.walkaholic.ui.main.dashboard.calendar.DashboardCalendarFragment"
         tools:layout="@layout/fragment_dashboard_calendar">
+        <action
+            android:id="@+id/action_actionBnvDashWalkRecord_to_actionBnvDash"
+            app:destination="@id/actionBnvDash"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
     </fragment>
 
     <fragment
         android:id="@+id/actionBnvTheme"
         android:name="com.mapo.walkaholic.ui.main.theme.ThemeFragment"
         tools:layout="@layout/fragment_theme">
+        <action
+            android:id="@+id/action_actionBnvTheme_to_actionBnvMap"
+            app:destination="@id/actionBnvMap"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim">
+            <argument
+                android:name="isWalk"
+                android:defaultValue="false"
+                app:argType="boolean" />
+            <argument
+                android:name="themeId"
+                app:argType="integer" />
+        </action>
+
+        <action
+            android:id="@+id/action_actionBnvThemeDetail_to_actionBnvDash"
+            app:destination="@id/actionBnvDash"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" >
+        </action>
+        <argument
+            android:name="themePosition"
+            app:argType="integer"
+            android:defaultValue="0" />
     </fragment>
 
     <fragment
         android:id="@+id/actionBnvChallenge"
         android:name="com.mapo.walkaholic.ui.main.challenge.ChallengeFragment"
         tools:layout="@layout/fragment_challenge">
+
+        <action
+            android:id="@+id/action_actionBnvChallenge_self"
+            app:destination="@id/actionBnvChallenge"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" >
+            <argument
+                android:name="idChallenge"
+                app:argType="integer" />
+        </action>
+        <argument
+            android:name="idChallenge"
+            app:argType="integer"
+            android:defaultValue="0" />
     </fragment>
 
     <fragment
         android:id="@+id/actionBnvMap"
         android:name="com.mapo.walkaholic.ui.main.map.MapFragment"
         tools:layout="@layout/fragment_map">
+        <argument
+            android:name="isWalk"
+            android:defaultValue="true"
+            app:argType="boolean" />
+        <argument
+            android:name="themeId"
+            android:defaultValue="-1"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_actionBnvMap_to_actionBnvTheme"
+            app:destination="@id/actionBnvTheme"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
     </fragment>
 
     <fragment
@@ -113,5 +221,18 @@
         android:name="com.mapo.walkaholic.ui.favoritepath.FavoritePathFragment"
         android:label="fragment_favorite_path"
         tools:layout="@layout/fragment_favorite_path" />
+
+    <fragment
+        android:id="@+id/actionBnvDashWeatherDetail"
+        android:name="com.mapo.walkaholic.ui.main.dashboard.weather.DashboardWeatherWebView"
+        tools:layout="@layout/fragment_dashboard_weather_web_view">
+        <action
+            android:id="@+id/action_actionBnvDashWeatherDetail_to_actionBnvDash"
+            app:destination="@id/actionBnvDash"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+    </fragment>
 
 </navigation>

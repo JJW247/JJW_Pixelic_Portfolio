@@ -22,30 +22,15 @@ class FavoritePathViewModel(
     val userResponse: LiveData<Resource<UserResponse>>
         get() = _userResponse
 
-    private val _favoritePathResponse: MutableLiveData<Resource<FavoritePathResponse>> = MutableLiveData()
-    val favoritePathResponse: LiveData<Resource<FavoritePathResponse>>
-        get() = _favoritePathResponse
-
     private val _themeResponse: MutableLiveData<Resource<ThemeResponse>> = MutableLiveData()
     val themeResponse: LiveData<Resource<ThemeResponse>>
         get() = _themeResponse
 
     fun getUser() {
         progressBarVisibility.set(true)
-        UserApiClient.instance.accessTokenInfo { tokenInfo, error ->
-            viewModelScope.launch {
-                if (error != null) {
-                } else {
-                    _userResponse.value = tokenInfo?.id?.let { mainRepository.getUser(it) }
-                }
-                progressBarVisibility.set(false)
-            }
-        }
-    }
-
-    fun getFavoritePath(userId: Long, id: String) {
         viewModelScope.launch {
-            _favoritePathResponse.value = mainRepository.getFavoritePath(userId, id)
+            _userResponse.value = mainRepository.getUser()
+            progressBarVisibility.set(false)
         }
     }
 

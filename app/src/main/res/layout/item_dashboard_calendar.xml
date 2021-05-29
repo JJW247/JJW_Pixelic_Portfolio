@@ -6,7 +6,7 @@
     <data>
         <variable
             name="recordItem"
-            type="com.mapo.walkaholic.data.model.WalkRecord" />
+            type="com.mapo.walkaholic.data.model.response.WalkRecordResponse.DataWalkRecord" />
     </data>
 
     <!--그림자효과 내기 위한 부모 레이아웃-->
@@ -23,6 +23,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="1dp"
             android:orientation="vertical"
+            android:background="@drawable/box_dashboard_corner_white_16dp"
             android:elevation="1dp">
 
             <LinearLayout
@@ -37,7 +38,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:text="@{recordItem.walk_date}"
+                    android:text='@{recordItem.walkDate}'
                     android:textColor="@color/h1"
                     android:layout_marginLeft="16dp" />
 
@@ -46,7 +47,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@{recordItem.walk_time}"
+                    android:text='@{recordItem.walkStartTime + "-" + recordItem.walkEndTime}'
                     android:textColor="@color/h4"
                     android:layout_marginLeft="3dp"/>
 
@@ -87,7 +88,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:text="@{recordItem.walk_distance}" />
+                        android:text="@{recordItem.walkDistance}" />
 
                     <TextView
                         style="@style/font_semi_bold_10_one"
@@ -96,7 +97,7 @@
                         android:layout_gravity="center"
                         android:text="@string/dash_calendar_distance"
                         android:textColor="@color/h4"
-                        android:layout_marginTop="8dp"/>
+                        android:layout_marginTop="1dp"/>
 
                 </LinearLayout>
 
@@ -114,8 +115,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:text="7000" />
-                    <!--android:text="@{recordItem.walk_amount}"-->
+                        android:text="@{recordItem.walkCount}" />
 
                     <TextView
                         style="@style/font_semi_bold_10_one"
@@ -124,7 +124,7 @@
                         android:layout_gravity="center"
                         android:text="@string/dash_calendar_step_count"
                         android:textColor="@color/h4"
-                        android:layout_marginTop="8dp"/>
+                        android:layout_marginTop="1dp"/>
 
                 </LinearLayout>
 
@@ -142,7 +142,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:text="@{recordItem.walk_calorie}" />
+                        android:text="@{recordItem.walkCalorie}" />
 
                     <TextView
                         style="@style/font_semi_bold_10_one"
@@ -151,7 +151,7 @@
                         android:layout_gravity="center"
                         android:text="@string/dash_calendar_kcal"
                         android:textColor="@color/h4"
-                        android:layout_marginTop="8dp"/>
+                        android:layout_marginTop="1dp"/>
 
                 </LinearLayout>
 
@@ -165,9 +165,10 @@
                     android:layout_marginRight="16dp">
 
                     <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-
+                        android:layout_width="100dp"
+                        android:layout_height="60dp"
+                        android:layout_gravity="center"
+                        app:setImage = "@{recordItem.walkFileName}"/>
                 </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>

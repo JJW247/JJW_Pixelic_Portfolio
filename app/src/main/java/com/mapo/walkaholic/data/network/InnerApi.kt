@@ -3,6 +3,7 @@ package com.mapo.walkaholic.data.network
 import com.mapo.walkaholic.data.model.request.BuyItemRequestBody
 import com.mapo.walkaholic.data.model.request.EquipItemRequestBody
 import com.mapo.walkaholic.data.model.request.MapRequestBody
+import com.mapo.walkaholic.data.model.request.WalkRewardRequestBody
 import com.mapo.walkaholic.data.model.response.*
 import okhttp3.ResponseBody
 import retrofit2.http.*
@@ -34,14 +35,14 @@ interface InnerApi {
     @GET("user/{id}/item/view")
     suspend fun getUserCharacterPreviewFilename(
         @Path("id") id: String,
-        @Query("faceItemId") faceItemId : String?,
-        @Query("headItemId") headItemId : String?
+        @Query("faceItemId") faceItemId: String?,
+        @Query("headItemId") headItemId: String?
     ): UserCharacterPreviewFilenameResponse
 
     @GET("global/resource/weather/{code}")
     suspend fun getFilenameWeather(
         @Path("code") code: String
-    ) : FilenameWeatherResponse
+    ): FilenameWeatherResponse
 
     @GET("global/resource/theme/name")
     suspend fun getCategoryTheme(): CategoryThemeResponse
@@ -57,10 +58,10 @@ interface InnerApi {
     @GET("user/{id}/item")
     suspend fun getStatusUserCharacterInventoryItem(
         @Path("id") id: String
-    ) : UserInventoryItemStatusResponse
+    ): UserInventoryItemStatusResponse
 
     @GET("item")
-    suspend fun getStatusShopSaleItem() : ShopSaleItemStatusResponse
+    suspend fun getStatusShopSaleItem(): ShopSaleItemStatusResponse
 
     @Headers(
         "Accept:application/json, text/plain, */*",
@@ -69,8 +70,8 @@ interface InnerApi {
     @POST("user/{id}/item")
     suspend fun buyItem(
         @Path("id") id: String,
-        @Body buyItemInfo : BuyItemRequestBody
-    ) : BuyItemResponse
+        @Body buyItemInfo: BuyItemRequestBody
+    ): BuyItemResponse
 
     @Headers(
         "Accept:application/json, text/plain, */*",
@@ -79,14 +80,14 @@ interface InnerApi {
     @PUT("user/{id}/item")
     suspend fun equipItem(
         @Path("id") id: String,
-        @Body equipItemInfo : EquipItemRequestBody
-    ) : EquipItemResponse
+        @Body equipItemInfo: EquipItemRequestBody
+    ): EquipItemResponse
 
     @DELETE("user/{id}/item/{itemId}")
     suspend fun deleteItem(
         @Path("id") id: String,
         @Path("itemId") itemId: String
-    ) : DeleteItemResponse
+    ): DeleteItemResponse
 
     @FormUrlEncoded
     @POST("map")
@@ -94,38 +95,54 @@ interface InnerApi {
         @Body body: MapRequestBody
     ): MapResponse
 
-    @FormUrlEncoded
-    @POST("info/calendarDate")
-    suspend fun getCalendarDate(
-        @Field("user_id") userId: Long,
-        @Field("walk_date") walkDate: String
+    @GET("course/theme/{id}")
+    suspend fun getThemeCourse(
+        @Path("id") id: String
+    ): ThemeCourseResponse
+
+    @GET("course/theme/route/{type}")
+    suspend fun getThemeCourseRoute(
+        @Path("type") type: String
+    ): ThemeCourseRouteResponse
+
+    @GET("user/{id}/detail/walk-record")
+    suspend fun getWalkRecord(
+        @Path("id") id: String,
+        @Query("date") date: String
     ): WalkRecordResponse
 
-    @FormUrlEncoded
-    @POST("info/calendarMonth")
+    @GET("user/{id}/walk-record")
     suspend fun getCalendarMonth(
-        @Field("user_id") userId: Long,
-        @Field("walk_month") walkMonth: String
+        @Path("id") id: Long,
+        @Query("date") date: String
     ): WalkRecordExistInMonthResponse
 
-    @FormUrlEncoded
-    @POST("info/missionCondition")
-    suspend fun getMissionCondition(
-        @Field("mission_id") missionId: String,
-    ): MissionConditionResponse
+    @GET("user/{id}/mission/{type}")
+    suspend fun getMission(
+        @Path("id") id: String,
+        @Path("type") type: String,
+    ): MissionResponse
 
-    @FormUrlEncoded
-    @POST("info/missionProgress")
-    suspend fun getMissionProgress(
-        @Field("mission_id") missionId: String,
-        @Field("condition_id") conditionId: String,
-    ): MissionProgressResponse
+    @PUT("user/{id}/reward/{missionId}")
+    suspend fun getMissionReward(
+        @Path("id") id: String,
+        @Path("missionId") missionId: String,
+    ): MissionRewardResponse
 
-    @FormUrlEncoded
-    @POST("info/ranking")
+    @GET("user/rank/{type}")
     suspend fun getRanking(
-        @Field("ranking_id") ranking_id: String
+        @Path("type") type: Int
     ): RankingResponse
+
+    @GET("user/{id}/rank/month")
+    suspend fun getMonthRanking(
+        @Path("id") id: String,
+    ): MonthRankingResponse
+
+    @GET("user/{id}/rank/accumulate")
+    suspend fun getAccumulateRanking(
+        @Path("id") id: String,
+    ): AccumulateRankingResponse
 
     @FormUrlEncoded
     @POST("info/favoritePath")
@@ -134,15 +151,20 @@ interface InnerApi {
         @Field("id") id: String
     ): FavoritePathResponse
 
-    /*@FormUrlEncoded
-    @POST("info/missionDaily")
-    suspend fun getMissionDaily(
-        @Field("mission_id") missionId: String,
-    ): MissionDailyResponse
+    @GET("amenity/{type}")
+    suspend fun getMarker(
+        @Path("type") type: String,
+        @Query("x") x: String,
+        @Query("y") y: String
+    ): MarkerLatLngResponse
 
-    @FormUrlEncoded
-    @POST("info/missionWeekly")
-    suspend fun getMissionWeekly(
-        @Field("mission_id") missionId: String,
-    ): MissionWeeklyResponse*/
+    @Headers(
+        "Accept:application/json, text/plain, */*",
+        "Content-Type:application/json;charset=UTF-8"
+    )
+    @PUT("user/{id}/walk/reward")
+    suspend fun setReward(
+        @Path("id") id : String,
+        @Body walkCount : WalkRewardRequestBody
+    ) : WalkRecordResponse
 }

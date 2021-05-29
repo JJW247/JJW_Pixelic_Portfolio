@@ -5,8 +5,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mapo.walkaholic.data.model.Theme
@@ -16,38 +14,22 @@ import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.repository.MainRepository
 import com.mapo.walkaholic.databinding.FragmentDetailFavoritePathBinding
-import com.mapo.walkaholic.ui.base.BaseSharedFragment
-import com.mapo.walkaholic.ui.base.EventObserver
-import com.mapo.walkaholic.ui.base.ViewModelFactory
+import com.mapo.walkaholic.ui.base.BaseFragment
 import com.mapo.walkaholic.ui.handleApiError
-import com.mapo.walkaholic.ui.snackbar
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 class FavoritePathDetailFragment(
     private val position: Int,
     private val listener: FavoritePathClickListener
-) : BaseSharedFragment<FavoritePathViewModel, FragmentDetailFavoritePathBinding, MainRepository>() {
+) : BaseFragment<FavoritePathDetailViewModel, FragmentDetailFavoritePathBinding, MainRepository>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val sharedViewModel: FavoritePathViewModel by viewModels {
-            ViewModelFactory(getFragmentRepository())
-        }
-        viewModel = sharedViewModel
-        viewModel.showToastEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@FavoritePathDetailFragment::showToastEvent)
-        )
-
-        viewModel.showSnackbarEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@FavoritePathDetailFragment::showSnackbarEvent)
-        )
         super.onViewCreated(view, savedInstanceState)
 
         val dummyMission1 =
-            Theme(0,"소나무 숲길", "소나무 숲길", "피톤치드", "강북구","90", "1.8")
+            Theme(0, "소나무 숲길", "소나무 숲길", "피톤치드", "강북구", "90", "1.8")
         val dummyMission2 =
-            Theme(0, "경의선 숲길", "경의선 숲길", "피톤치드", "마포구","90", "4.8")
+            Theme(0, "경의선 숲길", "경의선 숲길", "피톤치드", "마포구", "90", "4.8")
         val dummyArrayList: ArrayList<Theme> = ArrayList()
         dummyArrayList.add(dummyMission1)
         dummyArrayList.add(dummyMission2)
@@ -57,51 +39,53 @@ class FavoritePathDetailFragment(
             when (_userResponse) {
                 is Resource.Success -> {
                     //userid와 position으로 해당 종류에 유저가 갖고 있는 목록 조회
-                    viewModel.getFavoritePath(_userResponse.value.data.first().id, when(position) { 0 -> "00" 1 -> "01" else -> ""})
-                    viewModel.favoritePathResponse.observe(viewLifecycleOwner, Observer { _favoritePathResponse ->
-                        when (_favoritePathResponse) {
-                            is Resource.Success -> {
-                                //조회된 코스 목록의 아이디를 이용해 코스 상세 정보 조회
-                                //viewModel.getThemeDetail(_favoritePathResponse.value.FavoritePath.course_id)
-                                /*viewModel.themeResponse.observe(viewLifecycleOwner, Observer { _themeResponse ->
-                                    binding.favoritePathRV.also {
-                                        it.layoutManager = LinearLayoutManager(requireContext())
-                                        it.setHasFixedSize(true)
-                                        when (_themeResponse) {
-                                            is Resource.Success -> {
-                                                if (!_themeResponse.value.error) {
-                                                    it.adapter =
-                                                        _themeResponse.value.theme?.let { _themeResponse -> FavoritePathDetailAdapter(_themeResponse) }
+                    viewModel.getFavoritePath(_userResponse.value.data.first().id, position)
+                    viewModel.favoritePathResponse.observe(
+                        viewLifecycleOwner,
+                        Observer { _favoritePathResponse ->
+                            when (_favoritePathResponse) {
+                                is Resource.Success -> {
+                                    //조회된 코스 목록의 아이디를 이용해 코스 상세 정보 조회
+                                    //viewModel.getThemeDetail(_favoritePathResponse.value.FavoritePath.course_id)
+                                    /*viewModel.themeResponse.observe(viewLifecycleOwner, Observer { _themeResponse ->
+                                        binding.favoritePathRV.also {
+                                            it.layoutManager = LinearLayoutManager(requireContext())
+                                            it.setHasFixedSize(true)
+                                            when (_themeResponse) {
+                                                is Resource.Success -> {
+                                                    if (!_themeResponse.value.error) {
+                                                        it.adapter =
+                                                            _themeResponse.value.theme?.let { _themeResponse -> FavoritePathDetailAdapter(_themeResponse) }
+                                                    }
+                                                    Log.e("Theme_Detail", _themeResponse.value.theme.toString())
                                                 }
-                                                Log.e("Theme_Detail", _themeResponse.value.theme.toString())
-                                            }
-                                            is Resource.Loading -> {
+                                                is Resource.Loading -> {
 
-                                            }
-                                            is Resource.Failure -> {
-                                                _themeResponse.errorBody?.let { _themeResponse -> Log.e("Theme_Detail", _themeResponse.string()) }
-                                                handleApiError(_themeResponse)
+                                                }
+                                                is Resource.Failure -> {
+                                                    _themeResponse.errorBody?.let { _themeResponse -> Log.e("Theme_Detail", _themeResponse.string()) }
+                                                    handleApiError(_themeResponse)
+                                                }
                                             }
                                         }
-                                    }
-                                })*/
+                                    })*/
+                                }
+                                is Resource.Loading -> {
+                                    // Loading
+                                }
+                                is Resource.Failure -> {
+                                    // Network Error
+                                    handleApiError(_favoritePathResponse)
+                                }
                             }
-                            is Resource.Loading -> {
-
-                            }
-                            is Resource.Failure -> {
-                                _favoritePathResponse.errorBody?.let { _favoritePathResponse -> Log.e("FavoritePath", _favoritePathResponse.string()) }
-                                handleApiError(_favoritePathResponse)
-                            }
-                        }
-                    })
+                        })
                 }
                 is Resource.Loading -> {
-
+                    // Loading
                 }
                 is Resource.Failure -> {
-                    _userResponse.errorBody?.let { _userResponse -> Log.e("user", _userResponse.string()) }
-                    handleApiError(_userResponse)
+                    // Network Error
+                    handleApiError(_userResponse) { viewModel.getUser() }
                 }
             }
         })
@@ -122,31 +106,7 @@ class FavoritePathDetailFragment(
         }
     }
 
-    private fun showToastEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                Toast.makeText(
-                    requireContext(),
-                    contents,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    private fun showSnackbarEvent(contents: String) {
-        when(contents) {
-            null -> { }
-            "" -> { }
-            else -> {
-                requireView().snackbar(contents)
-            }
-        }
-    }
-
-    override fun getViewModel() = FavoritePathViewModel::class.java
+    override fun getViewModel() = FavoritePathDetailViewModel::class.java
 
     override fun getFragmentBinding(
         inflater: LayoutInflater,

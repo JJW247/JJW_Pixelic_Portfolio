@@ -1,6 +1,7 @@
 package com.mapo.walkaholic.ui.main.dashboard.character.shop
 
-import android.graphics.*
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -8,8 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.Observer
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.findNavController
@@ -17,9 +17,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
-import com.mapo.walkaholic.R
 import com.mapo.walkaholic.data.model.ItemInfo
 import com.mapo.walkaholic.data.network.ApisApi
 import com.mapo.walkaholic.data.network.InnerApi
@@ -27,21 +25,16 @@ import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.data.network.SgisApi
 import com.mapo.walkaholic.data.repository.MainRepository
 import com.mapo.walkaholic.databinding.FragmentDashboardCharacterShopBinding
-import com.mapo.walkaholic.ui.base.BaseSharedFragment
-import com.mapo.walkaholic.ui.base.EventObserver
-import com.mapo.walkaholic.ui.base.ViewModelFactory
+import com.mapo.walkaholic.ui.alertDialog
+import com.mapo.walkaholic.ui.base.BaseFragment
+import com.mapo.walkaholic.ui.confirmDialog
 import com.mapo.walkaholic.ui.handleApiError
 import com.mapo.walkaholic.ui.main.dashboard.character.CharacterShopSlotClickListener
-import com.mapo.walkaholic.ui.snackbar
-import kotlinx.android.synthetic.main.dialog_alert.view.*
-import kotlinx.android.synthetic.main.dialog_confirm.view.*
-import kotlinx.android.synthetic.main.fragment_dashboard_character_shop.view.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlin.math.*
 
 class DashboardCharacterShopFragment :
-    BaseSharedFragment<DashboardCharacterShopViewModel, FragmentDashboardCharacterShopBinding, MainRepository>(),
+    BaseFragment<DashboardCharacterShopViewModel, FragmentDashboardCharacterShopBinding, MainRepository>(),
     CharacterShopSlotClickListener {
     companion object {
         private const val PIXELS_PER_METRE = 4
@@ -52,18 +45,6 @@ class DashboardCharacterShopFragment :
     private var selectedSlotShopMapHair = mutableMapOf<Int, Triple<Boolean, ItemInfo, Boolean>>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val sharedViewModel: DashboardCharacterShopViewModel by viewModels {
-            ViewModelFactory(getFragmentRepository())
-        }
-        viewModel = sharedViewModel
-        viewModel.showToastEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@DashboardCharacterShopFragment::showToastEvent)
-        )
-        viewModel.showSnackbarEvent.observe(
-            viewLifecycleOwner,
-            EventObserver(this@DashboardCharacterShopFragment::showSnackbarEvent)
-        )
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
         binding.viewModel = viewModel
@@ -82,6 +63,7 @@ class DashboardCharacterShopFragment :
             }
         }.attach()
         binding.dashCharacterShopVP.isUserInputEnabled = false
+        viewModel.getUser()
         viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
             when (_userResponse) {
                 is Resource.Success -> {
@@ -197,11 +179,29 @@ class DashboardCharacterShopFragment :
                                                                                                                             })
                                                                                                                 }
                                                                                                             }
-                                                                                                            "400" -> {
-                                                                                                                // Error
-                                                                                                            }
                                                                                                             else -> {
                                                                                                                 // Error
+                                                                                                                confirmDialog(
+                                                                                                                    _userCharacterPreviewFilenameResponse.value.message,
+                                                                                                                    {
+                                                                                                                        viewModel!!.getUserCharacterPreviewFilename(
+                                                                                                                            _userResponse.value.data.first().id,
+                                                                                                                            if (!userCharacterEquipStatus["face"].isNullOrEmpty()) {
+                                                                                                                                userCharacterEquipStatus["face"]
+                                                                                                                                    .toString()
+                                                                                                                            } else {
+                                                                                                                                ""
+                                                                                                                            },
+                                                                                                                            if (!userCharacterEquipStatus["hair"].isNullOrEmpty()) {
+                                                                                                                                userCharacterEquipStatus["hair"]
+                                                                                                                                    .toString()
+                                                                                                                            } else {
+                                                                                                                                ""
+                                                                                                                            }
+                                                                                                                        )
+                                                                                                                    },
+                                                                                                                    "재시도"
+                                                                                                                )
                                                                                                             }
                                                                                                         }
                                                                                                     }
@@ -209,6 +209,7 @@ class DashboardCharacterShopFragment :
                                                                                                         // Loading
                                                                                                     }
                                                                                                     is Resource.Failure -> {
+                                                                                                        // Network Error
                                                                                                         handleApiError(
                                                                                                             _userCharacterPreviewFilenameResponse
                                                                                                         ) {
@@ -236,21 +237,17 @@ class DashboardCharacterShopFragment :
                                                                                     }
                                                                                 }
                                                                             }
-                                                                            "400" -> {
-                                                                                Toast.makeText(
-                                                                                    requireContext(),
-                                                                                    getString(R.string.err_user),
-                                                                                    Toast.LENGTH_SHORT
-                                                                                ).show()
-                                                                                //logout()
-                                                                            }
                                                                             else -> {
-                                                                                Toast.makeText(
-                                                                                    requireContext(),
-                                                                                    getString(R.string.err_user),
-                                                                                    Toast.LENGTH_SHORT
-                                                                                ).show()
-                                                                                //logout()
+                                                                                // Error
+                                                                                confirmDialog(
+                                                                                    _expInformationResponse.value.message,
+                                                                                    {
+                                                                                        viewModel!!.getExpInformation(
+                                                                                            _userResponse.value.data.first().id
+                                                                                        )
+                                                                                    },
+                                                                                    "재시도"
+                                                                                )
                                                                             }
                                                                         }
                                                                     }
@@ -258,23 +255,27 @@ class DashboardCharacterShopFragment :
                                                                         // Network Error
                                                                         handleApiError(
                                                                             _expInformationResponse
-                                                                        )
-                                                                        Toast.makeText(
-                                                                            requireContext(),
-                                                                            getString(R.string.err_user),
-                                                                            Toast.LENGTH_SHORT
-                                                                        ).show()
-                                                                        //logout()
+                                                                        ) {
+                                                                            viewModel!!.getExpInformation(
+                                                                                _userResponse.value.data.first().id
+                                                                            )
+                                                                        }
                                                                     }
                                                                 }
                                                             })
                                                     }
                                                 }
-                                                "400" -> {
-                                                    // Error
-                                                }
                                                 else -> {
                                                     // Error
+                                                    confirmDialog(
+                                                        _userCharacterEquipStatusResponse.value.message,
+                                                        {
+                                                            viewModel.getUserCharacterEquipStatus(
+                                                                _userResponse.value.data.first().id
+                                                            )
+                                                        },
+                                                        "재시도"
+                                                    )
                                                 }
                                             }
                                         }
@@ -297,240 +298,120 @@ class DashboardCharacterShopFragment :
                                     .sum() + selectedSlotShopMapHair.filter { it.value.first }
                                     .map { it.value.second.itemPrice!!.toInt() }.sum()
                                 if (totalPrice <= 0) {
-                                    val confirmDialogLayout = LayoutInflater.from(context)
-                                        .inflate(R.layout.dialog_confirm, null, false)
-                                    val materialConfirmDialogBuilder =
-                                        MaterialAlertDialogBuilder(requireContext()).setView(
-                                            confirmDialogLayout
-                                        ).create()
-                                    materialConfirmDialogBuilder.setOnShowListener { _confirmDialog ->
-                                        confirmDialogLayout.dialogConfirmTv1.text =
-                                            "구매하실 아이템을 선택하세요"
-                                        confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
-                                            _confirmDialog.dismiss()
-                                        }
-                                    }
-                                    materialConfirmDialogBuilder.show()
+                                    confirmDialog("구매하실 아이템을 선택하세요", null, null)
                                 } else {
-                                    val alertDialogLayout = LayoutInflater.from(context)
-                                        .inflate(R.layout.dialog_alert, null, false)
-                                    val materialAlertDialogBuilder =
-                                        MaterialAlertDialogBuilder(requireContext()).setView(
-                                            alertDialogLayout
-                                        ).create()
-                                    materialAlertDialogBuilder.setOnShowListener { _alertDialog ->
-                                        alertDialogLayout.dialogAlertTv1.text =
-                                            "총 ${totalPrice}P 입니다. 구매하시겠습니까?"
-                                        alertDialogLayout.dialogAlertTvNo.setOnClickListener {
-                                            _alertDialog.dismiss()
-                                        }
-                                        alertDialogLayout.dialogAlertTvYes.setOnClickListener {
-                                            _alertDialog.dismiss()
-                                            val filteredSelectedFace =
-                                                selectedSlotShopMapFace.filter { _selectedSlotShopMapFace -> _selectedSlotShopMapFace.value.first }
-                                            val filteredSelectedHair =
-                                                selectedSlotShopMapHair.filter { _selectedSlotShopMapHair -> _selectedSlotShopMapHair.value.first }
-                                            if (filteredSelectedFace.isNullOrEmpty()
-                                                && filteredSelectedHair.isNullOrEmpty()
-                                            ) {
-                                                val confirmDialogLayout =
-                                                    LayoutInflater.from(context).inflate(
-                                                        R.layout.dialog_confirm,
-                                                        null,
-                                                        false
+                                    val onClickConfirm: () -> Unit? = {
+                                        val filteredSelectedFace =
+                                            selectedSlotShopMapFace.filter { _selectedSlotShopMapFace -> _selectedSlotShopMapFace.value.first }
+                                        val filteredSelectedHair =
+                                            selectedSlotShopMapHair.filter { _selectedSlotShopMapHair -> _selectedSlotShopMapHair.value.first }
+                                        if (filteredSelectedFace.isNullOrEmpty()
+                                            && filteredSelectedHair.isNullOrEmpty()
+                                        ) {
+                                            confirmDialog("구매하실 아이템을 선택하세요", null, null)
+                                        } else {
+                                            val arrayListSelectedItemId = arrayListOf<Int?>()
+                                            filteredSelectedFace.forEach { (_selectedSlotShopMapFaceIndex, _selectedSlotShopMapFaceElement) ->
+                                                if (_selectedSlotShopMapFaceElement.second.itemId != null) {
+                                                    arrayListSelectedItemId.add(
+                                                        _selectedSlotShopMapFaceElement.second.itemId
                                                     )
-                                                val materialConfirmDialogBuilder =
-                                                    MaterialAlertDialogBuilder(requireContext()).setView(
-                                                        confirmDialogLayout
-                                                    ).create()
-                                                materialConfirmDialogBuilder.setOnShowListener { _confirmDialog ->
-                                                    confirmDialogLayout.dialogConfirmTv1.text =
-                                                        "구매하실 아이템을 선택하세요"
-                                                    confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
-                                                        _confirmDialog.dismiss()
-                                                    }
                                                 }
-                                                materialConfirmDialogBuilder.show()
-                                            } else {
-                                                val arrayListSelectedItemId = arrayListOf<Int?>()
-                                                filteredSelectedFace.forEach { (_selectedSlotShopMapFaceIndex, _selectedSlotShopMapFaceElement) ->
-                                                    if (_selectedSlotShopMapFaceElement.second.itemId != null) {
-                                                        arrayListSelectedItemId.add(
-                                                            _selectedSlotShopMapFaceElement.second.itemId
-                                                        )
-                                                    }
-                                                }
-                                                filteredSelectedHair.forEach { (_selectedSlotShopMapHairIndex, _selectedSlotShopMapHairElement) ->
-                                                    if (_selectedSlotShopMapHairElement.second.itemId != null) {
-                                                        arrayListSelectedItemId.add(
-                                                            _selectedSlotShopMapHairElement.second.itemId
-                                                        )
-                                                    }
-                                                }
-                                                viewModel.buyItem(
-                                                    _userResponse.value.data.first().id,
-                                                    arrayListSelectedItemId
-                                                )
                                             }
+                                            filteredSelectedHair.forEach { (_selectedSlotShopMapHairIndex, _selectedSlotShopMapHairElement) ->
+                                                if (_selectedSlotShopMapHairElement.second.itemId != null) {
+                                                    arrayListSelectedItemId.add(
+                                                        _selectedSlotShopMapHairElement.second.itemId
+                                                    )
+                                                }
+                                            }
+                                            viewModel.buyItem(
+                                                _userResponse.value.data.first().id,
+                                                arrayListSelectedItemId
+                                            )
+                                            viewModel.buyItemResponse.observe(
+                                                viewLifecycleOwner,
+                                                Observer { _buyItemResponse ->
+                                                    when (_buyItemResponse) {
+                                                        is Resource.Success -> {
+                                                            val stringAdditionalMessage =
+                                                                if (!_buyItemResponse.value.data.isNullOrEmpty() && _buyItemResponse.value.data.size != 0) {
+                                                                    "\n" + _buyItemResponse.value.data.first()
+                                                                        .toString()
+                                                                } else {
+                                                                    ""
+                                                                }
+                                                            when (_buyItemResponse.value.code) {
+                                                                "200" -> {
+                                                                    confirmDialog(
+                                                                        _buyItemResponse.value.message + stringAdditionalMessage,
+                                                                        null,
+                                                                        null
+                                                                    )
+                                                                    viewModel.getUser()
+                                                                }
+                                                                else -> {
+                                                                    // Error
+                                                                    confirmDialog(
+                                                                        _buyItemResponse.value.message,
+                                                                        {
+                                                                            viewModel.buyItem(
+                                                                                _userResponse.value.data.first().id,
+                                                                                arrayListSelectedItemId
+                                                                            )
+                                                                        },
+                                                                        "재시도"
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                        is Resource.Loading -> {
+                                                            // Loading
+                                                        }
+                                                        is Resource.Failure -> {
+                                                            handleApiError(_buyItemResponse) {
+                                                                viewModel.buyItem(
+                                                                    _userResponse.value.data.first().id,
+                                                                    arrayListSelectedItemId
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                })
                                         }
                                     }
-                                    materialAlertDialogBuilder.show()
+                                    alertDialog(
+                                        "총 ${totalPrice}P 입니다. 구매하시겠습니까?",
+                                        null,
+                                        onClickConfirm as (() -> Unit)
+                                    )
                                 }
                             }
                         }
-                        "400" -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_user),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            //logout()
-                            //requireActivity().startNewActivity(AuthActivity::class.java)
-                        }
                         else -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_user),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            //logout()
-                            //requireActivity().startNewActivity(AuthActivity::class.java)
+                            confirmDialog(
+                                _userResponse.value.message,
+                                {
+                                    viewModel.getUser()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
                 is Resource.Loading -> {
                 }
                 is Resource.Failure -> {
-                    handleApiError(_userResponse)
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.err_user),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    //logout()
+                    handleApiError(_userResponse) { viewModel.getUser() }
                     //requireActivity().startNewActivity(AuthActivity::class.java)
                 }
             }
         })
-        viewModel.buyItemResponse.observe(
-            viewLifecycleOwner,
-            Observer { _buyItemResponse ->
-                when (_buyItemResponse) {
-                    is Resource.Success -> {
-                        when (_buyItemResponse.value.code) {
-                            "200" -> {
-                                val confirmDialogLayout = LayoutInflater.from(context)
-                                    .inflate(R.layout.dialog_confirm, null, false)
-                                val materialConfirmDialogBuilder =
-                                    MaterialAlertDialogBuilder(requireContext()).setView(
-                                        confirmDialogLayout
-                                    ).create()
-                                materialConfirmDialogBuilder.setOnShowListener { _confirmDialog ->
-                                    val stringAdditionalMessage =
-                                        if (!_buyItemResponse.value.data.isNullOrEmpty() && _buyItemResponse.value.data.size != 0) {
-                                            "\n" + _buyItemResponse.value.data!!.first().toString()
-                                        } else {
-                                            ""
-                                        }
-                                    confirmDialogLayout.dialogConfirmTv1.text =
-                                        _buyItemResponse.value.message + stringAdditionalMessage
-                                    confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
-                                        _confirmDialog.dismiss()
-                                    }
-                                }
-                                materialConfirmDialogBuilder.show()
-                                viewModel.getDash()
-                            }
-                            "400" -> {
-                                // Error
-                                val confirmDialogLayout = LayoutInflater.from(context)
-                                    .inflate(R.layout.dialog_confirm, null, false)
-                                val materialConfirmDialogBuilder =
-                                    MaterialAlertDialogBuilder(requireContext()).setView(
-                                        confirmDialogLayout
-                                    ).create()
-                                materialConfirmDialogBuilder.setOnShowListener { _confirmDialog ->
-                                    val stringAdditionalMessage =
-                                        if (!_buyItemResponse.value.data.isNullOrEmpty() && _buyItemResponse.value.data.size != 0) {
-                                            "\n" + _buyItemResponse.value.data.first().toString()
-                                        } else {
-                                            ""
-                                        }
-                                    confirmDialogLayout.dialogConfirmTv1.text =
-                                        _buyItemResponse.value.message + stringAdditionalMessage
-                                    confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
-                                        _confirmDialog.dismiss()
-                                    }
-                                }
-                                materialConfirmDialogBuilder.show()
-                            }
-                            else -> {
-                                // Error
-                                val confirmDialogLayout = LayoutInflater.from(context)
-                                    .inflate(R.layout.dialog_confirm, null, false)
-                                val materialConfirmDialogBuilder =
-                                    MaterialAlertDialogBuilder(requireContext()).setView(
-                                        confirmDialogLayout
-                                    ).create()
-                                materialConfirmDialogBuilder.setOnShowListener { _confirmDialog ->
-                                    val stringAdditionalMessage =
-                                        if (!_buyItemResponse.value.data.isNullOrEmpty() && _buyItemResponse.value.data.size != 0) {
-                                            "\n" + _buyItemResponse.value.data!!.first().toString()
-                                        } else {
-                                            ""
-                                        }
-                                    confirmDialogLayout.dialogConfirmTv1.text =
-                                        _buyItemResponse.value.message + stringAdditionalMessage
-                                    confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
-                                        _confirmDialog.dismiss()
-                                    }
-                                }
-                                materialConfirmDialogBuilder.show()
-                            }
-                        }
-                    }
-                    is Resource.Loading -> {
-                        // Loading
-                    }
-                    is Resource.Failure -> {
-                        handleApiError(_buyItemResponse)
-                    }
-                }
-            })
-        viewModel.getDash()
         binding.dashCharacterShopIvInfo.setOnClickListener {
             val navDirection: NavDirections? =
                 DashboardCharacterShopFragmentDirections.actionActionBnvDashCharacterShopToActionBnvDashCharacterInfo()
             if (navDirection != null) {
                 findNavController().navigate(navDirection)
-            }
-        }
-    }
-
-    private fun showToastEvent(contents: String) {
-        when (contents) {
-            null -> {
-            }
-            "" -> {
-            }
-            else -> {
-                Toast.makeText(
-                    requireContext(),
-                    contents,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    private fun showSnackbarEvent(contents: String) {
-        when (contents) {
-            null -> {
-            }
-            "" -> {
-            }
-            else -> {
-                requireView().snackbar(contents)
             }
         }
     }
@@ -558,7 +439,6 @@ class DashboardCharacterShopFragment :
         } else if (selectedSlotShopMap[0]?.second?.itemType == "face") {
             selectedSlotShopMapFace = selectedSlotShopMap
         }
-
         viewModel.userResponse.observe(viewLifecycleOwner, Observer { _userResponse ->
             when (_userResponse) {
                 is Resource.Success -> {
@@ -590,11 +470,15 @@ class DashboardCharacterShopFragment :
                                 }
                             )
                         }
-                        "400" -> {
-                            // Error
-                        }
                         else -> {
                             // Error
+                            confirmDialog(
+                                _userResponse.value.message,
+                                {
+                                    viewModel.getUser()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -603,7 +487,7 @@ class DashboardCharacterShopFragment :
                 }
                 is Resource.Failure -> {
                     // Network Error
-                    handleApiError(_userResponse)
+                    handleApiError(_userResponse) { viewModel.getUser() }
                 }
             }
         })
@@ -651,5 +535,24 @@ class DashboardCharacterShopFragment :
                 binding.dashCharacterShopTvIntro6.text = " 입니다."
             }
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val navDirection: NavDirections? =
+                    DashboardCharacterShopFragmentDirections.actionActionBnvDashCharacterShopToActionBnvDashCharacterInfo()
+                if (navDirection != null) {
+                    findNavController().navigate(navDirection)
+                }
+            }
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback.remove()
     }
 }

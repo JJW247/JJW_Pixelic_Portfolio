@@ -1,8 +1,13 @@
 package com.mapo.walkaholic.data.model.response
 
-import com.mapo.walkaholic.data.model.Ranking
-
 data class RankingResponse (
-    val error: Boolean,
-    val ranking: ArrayList<Ranking>
-)
+    val code: String,
+    val message: String,
+    val data: ArrayList<Ranking>
+) {
+    data class Ranking(
+        val nickName: String,
+        val rank: String,
+        val point: String
+    )
+}

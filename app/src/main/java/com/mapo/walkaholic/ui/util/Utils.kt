@@ -1,7 +1,6 @@
 package com.mapo.walkaholic.ui
 
 import android.app.Activity
-import android.content.ContentValues
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
@@ -14,9 +13,11 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.util.TypedValue
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.databinding.BindingAdapter
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -24,10 +25,14 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.mapo.walkaholic.R
 import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.ui.auth.LoginFragment
 import com.mapo.walkaholic.ui.global.GlobalApplication
+import kotlinx.android.synthetic.main.dialog_alert.view.*
+import kotlinx.android.synthetic.main.dialog_confirm.view.*
 
 private const val RESOURCE_BASE_URL = "http://15.164.103.223:8080/static/img/"
 
@@ -42,7 +47,16 @@ fun View.visible(isVisible: Boolean) {
     visibility = if (isVisible) View.VISIBLE else View.GONE
 }
 
-fun View.snackbar(message: String, action: (() -> Unit)? = null) {
+fun View.toastMessage(message: String) {
+    val toast = Toast.makeText(
+        context,
+        message,
+        Toast.LENGTH_SHORT
+    )
+    toast.show()
+}
+
+/*fun View.snackbar(message: String, action: (() -> Unit)? = null) {
     val snackbar = Snackbar.make(this, message, Snackbar.LENGTH_LONG)
     action?.let {
         snackbar.setAction("재시도") {
@@ -50,46 +64,135 @@ fun View.snackbar(message: String, action: (() -> Unit)? = null) {
         }
     }
     snackbar.show()
+}*/
+
+fun Fragment.confirmDialog(message: String, onClickConfirm: (() -> Unit)? = null, confirmText: String?) {
+    requireActivity().confirmDialog(message, onClickConfirm, confirmText)
 }
 
-fun Fragment.handleApiError(
-    failure: Resource.Failure,
-    retry: (() -> Unit)? = null
+fun Fragment.notCancelableConfirmDialog(message: String, onClickConfirm: (() -> Unit), confirmText: String?) {
+    requireActivity().confirmDialog(message, onClickConfirm, confirmText)
+}
+
+fun Fragment.alertDialog(message: String, onClickNo: (() -> Unit)? = null, onClickYes: () -> Unit) {
+    requireActivity().alertDialog(message, onClickNo, onClickYes)
+}
+
+
+fun Activity.confirmDialog(
+    message: String,
+    onClickConfirm: (() -> Unit)? = null,
+    confirmText: String?
 ) {
-    val error = failure.errorBody?.string().toString()
-    when {
-        failure.isNetworkError -> {
-            if(!checkNetworkState(requireView().context)) {
-                requireView().snackbar("네트워크 연결을 확인해주세요\n${failure.errorBody?.string()}", retry)
-            } else {
-                requireView().snackbar("API 서버와의 통신이 원활하지 않습니다\n${failure.errorBody?.string()}", retry)
-            }
+    val confirmDialogLayout = LayoutInflater.from(this)
+        .inflate(R.layout.dialog_confirm, null, false)
+    val materialAlertDialogBuilder = MaterialAlertDialogBuilder(this).setView(
+        confirmDialogLayout
+    ).create()
+    materialAlertDialogBuilder.setOnShowListener { _confirmDialog ->
+        confirmDialogLayout.dialogConfirmTv1.text = message
+        if (!confirmText.isNullOrEmpty()) {
+            confirmDialogLayout.dialogConfirmTv2.text = confirmText
         }
-        else -> {
-            requireView().snackbar("API 서버와의 통신이 원활하지 않습니다\n${failure.errorBody?.string()}", retry)
+        confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
+            if (onClickConfirm != null) {
+                onClickConfirm()
+            }
+            _confirmDialog.dismiss()
         }
     }
+    materialAlertDialogBuilder.show()
+}
+
+fun Activity.notCancelableConfirmDialog(
+    message: String,
+    onClickConfirm: (() -> Unit),
+    confirmText: String?
+) {
+    val confirmDialogLayout = LayoutInflater.from(this)
+        .inflate(R.layout.dialog_confirm, null, false)
+    val materialAlertDialogBuilder = MaterialAlertDialogBuilder(this).setView(
+        confirmDialogLayout
+    ).setCancelable(false).create()
+    materialAlertDialogBuilder.setCanceledOnTouchOutside(false)
+    materialAlertDialogBuilder.setOnShowListener { _confirmDialog ->
+        confirmDialogLayout.dialogConfirmTv1.text = message
+        if (!confirmText.isNullOrEmpty()) {
+            confirmDialogLayout.dialogConfirmTv2.text = confirmText
+        }
+        confirmDialogLayout.dialogConfirmTv2.setOnClickListener {
+            onClickConfirm()
+            _confirmDialog.dismiss()
+        }
+    }
+    materialAlertDialogBuilder.show()
+}
+
+fun Activity.alertDialog(message: String, onClickNo: (() -> Unit)? = null, onClickYes: () -> Unit) {
+    val alertDialogLayout = LayoutInflater.from(this)
+        .inflate(R.layout.dialog_alert, null, false)
+    val materialAlertDialogBuilder = MaterialAlertDialogBuilder(this).setView(
+        alertDialogLayout
+    ).create()
+    materialAlertDialogBuilder.setOnShowListener { _alertDialog ->
+        alertDialogLayout.dialogAlertTv1.text = message
+        alertDialogLayout.dialogAlertTvNo.setOnClickListener {
+            if (onClickNo != null) {
+                onClickNo()
+            }
+            _alertDialog.dismiss()
+        }
+        alertDialogLayout.dialogAlertTvYes.setOnClickListener {
+            _alertDialog.dismiss()
+            onClickYes()
+        }
+    }
+    materialAlertDialogBuilder.show()
+}
+
+
+fun Fragment.handleApiError(
+    failure: Resource.Failure, action: (() -> Unit)? = null
+) {
+    requireActivity().handleApiError(failure, action)
 }
 
 fun Activity.handleApiError(
-    failure: Resource.Failure,
-    retry: (() -> Unit)? = null
+    failure: Resource.Failure, action: (() -> Unit)? = null
 ) {
+    val notNullErrorBody =
+        if (failure.errorBody != null && failure.errorBody.string() != "null") {
+            "\n" + failure.errorBody.string()
+        } else {
+            ""
+        }
     when {
         failure.isNetworkError -> {
-            if(!checkNetworkState(window.decorView.context)) {
-                window.decorView.snackbar("네트워크 연결을 확인해주세요\n${failure.errorBody?.string()}", retry)
+            if (!checkNetworkState(window.decorView.context)) {
+                notCancelableConfirmDialog(
+                    "네트워크 연결 후 재시도해주세요${notNullErrorBody}",
+                    action!!,
+                    "재시도"
+                )
             } else {
-                window.decorView.snackbar("API 서버와의 통신이 원활하지 않습니다\n${failure.errorBody?.string()}", retry)
+                confirmDialog(
+                    "API 서버와의 통신이 원활하지 않습니다${notNullErrorBody}",
+                    action,
+                    "재시도"
+                )
             }
         }
         else -> {
-            window.decorView.snackbar("API 서버와의 통신이 원활하지 않습니다\n${failure.errorBody?.string()}", retry)
+            confirmDialog(
+                "API 서버와의 통신이 원활하지 않습니다${notNullErrorBody}",
+                action,
+                "재시도"
+            )
         }
     }
 }
 
-fun checkNetworkState(context : Context): Boolean {
+fun checkNetworkState(context: Context): Boolean {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -98,6 +201,8 @@ fun checkNetworkState(context : Context): Boolean {
         return when {
             actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
             actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
             else -> false
         }
     } else {
@@ -140,7 +245,7 @@ fun formatText(textView: TextView, _fullText: String?, _spanText: String?, spanC
 
 @BindingAdapter("app:setImage")
 fun setImageUrl(view: ImageView, imageSrc: String?) {
-    if(!imageSrc.isNullOrEmpty()) {
+    if (!imageSrc.isNullOrEmpty()) {
         Glide.with(view.context)
             .load("${RESOURCE_BASE_URL}${imageSrc}")
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -150,11 +255,6 @@ fun setImageUrl(view: ImageView, imageSrc: String?) {
                     resource: Drawable,
                     transition: Transition<in Drawable>?
                 ) {
-                    TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP,
-                        resource.minimumWidth.toFloat(),
-                        GlobalApplication.getGlobalApplicationContext().resources.displayMetrics
-                    ).toInt()
                     view.minimumWidth = TypedValue.applyDimension(
                         TypedValue.COMPLEX_UNIT_DIP,
                         resource.minimumWidth.toFloat(),

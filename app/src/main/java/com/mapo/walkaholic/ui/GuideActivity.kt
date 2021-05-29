@@ -1,8 +1,6 @@
 package com.mapo.walkaholic.ui
 
-import android.os.Build
 import android.os.Bundle
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.mapo.walkaholic.data.UserPreferences
@@ -15,13 +13,11 @@ import com.mapo.walkaholic.ui.base.BaseActivity
 import com.mapo.walkaholic.ui.base.ViewModelFactory
 import com.mapo.walkaholic.ui.global.GlobalApplication
 import kotlinx.android.synthetic.main.activity_guide.*
-import kotlinx.android.synthetic.main.item_guide.view.*
 
-@RequiresApi(Build.VERSION_CODES.M)
 class GuideActivity : BaseActivity<GuideViewModel, ActivityGuideBinding, GuideRepository>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // For Manage Activity Lifecycle
-        GlobalApplication.activityList.add(this)
+        GlobalApplication.mActivityList.add(this)
         // Call Parent Function
         super.onCreate(savedInstanceState)
         /*
@@ -41,6 +37,10 @@ class GuideActivity : BaseActivity<GuideViewModel, ActivityGuideBinding, GuideRe
          */
         binding.viewModel = viewModel
         /*
+            Call Rest Function in ViewModel
+         */
+        viewModel.getFilenameGuideImage()
+        /*
             Observe Resource of Tutorial Filename
          */
         viewModel.filenameGuideImageResponse.observe(this, Observer { _filenameGuideImageResponse ->
@@ -50,11 +50,15 @@ class GuideActivity : BaseActivity<GuideViewModel, ActivityGuideBinding, GuideRe
                         "200" -> {
                             binding.guideVp.adapter = GuideAdapter(_filenameGuideImageResponse.value.data)
                         }
-                        "400" -> {
-                            // Error
-                        }
                         else -> {
                             // Error
+                            confirmDialog(
+                                _filenameGuideImageResponse.value.message,
+                                {
+                                    viewModel.getFilenameGuideImage()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -63,14 +67,10 @@ class GuideActivity : BaseActivity<GuideViewModel, ActivityGuideBinding, GuideRe
                 }
                 is Resource.Failure -> {
                     // Network Error
-                    handleApiError(_filenameGuideImageResponse) { viewModel.getFilenameGuideImage() }
+                    handleApiError(_filenameGuideImageResponse) { _filenameGuideImageResponse }
                 }
             }
         })
-        /*
-            Call Rest Function in ViewModel
-         */
-        viewModel.getFilenameGuideImage()
         binding.guideChipSkip.setOnClickListener {
             startNewActivity(AuthActivity::class.java)
         }
@@ -89,7 +89,7 @@ class GuideActivity : BaseActivity<GuideViewModel, ActivityGuideBinding, GuideRe
 
     override fun onDestroy() {
         // For Manage Activity Lifecycle
-        GlobalApplication.activityList.remove(this)
+        GlobalApplication.mActivityList.remove(this)
         super.onDestroy()
     }
 

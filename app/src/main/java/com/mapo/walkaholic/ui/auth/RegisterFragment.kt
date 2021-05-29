@@ -1,21 +1,27 @@
 package com.mapo.walkaholic.ui.auth
 
+import android.app.Activity
 import android.app.DatePickerDialog
+import android.content.ContentValues
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.isNotEmpty
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.findNavController
 import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import com.mapo.walkaholic.R
@@ -24,6 +30,7 @@ import com.mapo.walkaholic.data.network.Resource
 import com.mapo.walkaholic.data.repository.AuthRepository
 import com.mapo.walkaholic.databinding.FragmentRegisterBinding
 import com.mapo.walkaholic.ui.base.BaseFragment
+import com.mapo.walkaholic.ui.confirmDialog
 import com.mapo.walkaholic.ui.handleApiError
 import com.mapo.walkaholic.ui.main.MainActivity
 import com.mapo.walkaholic.ui.startNewActivity
@@ -32,38 +39,48 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding, AuthRepository>() {
+class RegisterFragment :
+    BaseFragment<RegisterViewModel, FragmentRegisterBinding, AuthRepository>() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel.let { binding.viewModel = it }
+        binding.viewModel = viewModel
         viewModel.progressBarVisibility.let { }
         binding.registerTvService.movementMethod = ScrollingMovementMethod.getInstance()
         binding.registerTvPrivacy.movementMethod = ScrollingMovementMethod.getInstance()
         binding.registerEtBirth.setText(SimpleDateFormat("yyyy-MM-dd").format(Date()))
-        viewModel.filenameLogoImageResponse.observe(viewLifecycleOwner, Observer { _filenameLogoImageResponse ->
-            when(_filenameLogoImageResponse) {
-                is Resource.Success -> {
-                    when(_filenameLogoImageResponse.value.code) {
-                        "200" -> {
-                            binding.filenameLogoImage = _filenameLogoImageResponse.value.data.first()
-                        }
-                        "400" -> {
-                            // Error
-                        }
-                        else -> {
-                            // Error
+        viewModel.getFilenameTitleLogo()
+        viewModel.filenameLogoImageResponse.observe(
+            viewLifecycleOwner,
+            Observer { _filenameLogoImageResponse ->
+                when (_filenameLogoImageResponse) {
+                    is Resource.Success -> {
+                        when (_filenameLogoImageResponse.value.code) {
+                            "200" -> {
+                                binding.filenameLogoImage =
+                                    _filenameLogoImageResponse.value.data.first()
+                            }
+                            else -> {
+                                // Error
+                                confirmDialog(
+                                    _filenameLogoImageResponse.value.message,
+                                    {
+                                        viewModel.getFilenameTitleLogo()
+                                    },
+                                    "재시도"
+                                )
+                            }
                         }
                     }
+                    is Resource.Loading -> {
+                        // Loading
+                    }
+                    is Resource.Failure -> {
+                        // Network Error
+                        handleApiError(_filenameLogoImageResponse) { viewModel.getFilenameTitleLogo() }
+                    }
                 }
-                is Resource.Loading -> {
-                    // Loading
-                }
-                is Resource.Failure -> {
-                    // Network Error
-                    handleApiError(_filenameLogoImageResponse) { viewModel.getFilenameTitleLogo() }
-                }
-            }
-        })
+            })
+        viewModel.getTermService()
         viewModel.termServiceResponse.observe(viewLifecycleOwner, Observer { _termServiceResponse ->
             when (_termServiceResponse) {
                 is Resource.Success -> {
@@ -71,19 +88,14 @@ class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding
                         "200" -> {
                             binding.termService = _termServiceResponse.value.data.first()
                         }
-                        "400" -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_unexpected),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
                         else -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_unexpected),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            confirmDialog(
+                                _termServiceResponse.value.message,
+                                {
+                                    viewModel.getTermService()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -92,6 +104,7 @@ class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding
                 }
             }
         })
+        viewModel.getTermPrivacy()
         viewModel.termPrivacyResponse.observe(viewLifecycleOwner, Observer { _termPrivacyResponse ->
             when (_termPrivacyResponse) {
                 is Resource.Success -> {
@@ -99,19 +112,14 @@ class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding
                         "200" -> {
                             binding.termPrivacy = _termPrivacyResponse.value.data.first()
                         }
-                        "400" -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_unexpected),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
                         else -> {
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.err_unexpected),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            confirmDialog(
+                                _termPrivacyResponse.value.message,
+                                {
+                                    viewModel.getTermPrivacy()
+                                },
+                                "재시도"
+                            )
                         }
                     }
                 }
@@ -120,42 +128,6 @@ class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding
                 }
             }
         })
-        viewModel.registerResponse.observe(
-            viewLifecycleOwner,
-            Observer {
-                when (it) {
-                    is Resource.Success -> {
-                        when(it.value.code) {
-                            "200" -> {
-                                lifecycleScope.launch {
-                                    /*viewModel.saveJwtToken(it.value.jwtToken)*/
-                                    requireActivity().startNewActivity(MainActivity::class.java)
-                                }
-                            }
-                            "400" -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    it.value.message,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            else -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    it.value.message,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
-                    is Resource.Failure -> {
-                        handleApiError(it)
-                    }
-                }
-            })
-        viewModel.getFilenameTitleLogo()
-        viewModel.getTermService()
-        viewModel.getTermPrivacy()
         binding.registerChipAgreeAll.setOnClickListener {
             binding.registerChipAgreeService.isClickable = false
             binding.registerChipAgreePrivacy.isClickable = false
@@ -294,9 +266,70 @@ class RegisterFragment : BaseFragment<RegisterViewModel, FragmentRegisterBinding
                         userNickname,
                         userWeight
                     )
+                    viewModel.registerResponse.observe(
+                        viewLifecycleOwner,
+                        Observer { _registerResponse ->
+                            when (_registerResponse) {
+                                is Resource.Success -> {
+                                    when (_registerResponse.value.code) {
+                                        "200" -> {
+                                            lifecycleScope.launch {
+                                                /*viewModel.saveJwtToken(it.value.jwtToken)*/
+                                                requireActivity().startNewActivity(MainActivity::class.java)
+                                            }
+                                        }
+                                        else -> {
+                                            confirmDialog(
+                                                _registerResponse.value.message,
+                                                {
+                                                    viewModel.register(
+                                                        userBirth,
+                                                        userGender,
+                                                        userHeight,
+                                                        userNickname,
+                                                        userWeight
+                                                    )
+                                                },
+                                                "재시도"
+                                            )
+                                        }
+                                    }
+                                }
+                                is Resource.Failure -> {
+                                    handleApiError(_registerResponse) {
+                                        viewModel.register(
+                                            userBirth,
+                                            userGender,
+                                            userHeight,
+                                            userNickname,
+                                            userWeight
+                                        )
+                                    }
+                                }
+                            }
+                        })
                 }
             }
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val navDirection: NavDirections? =
+                    RegisterFragmentDirections.actionRegisterFragmentToLoginFragment()
+                if (navDirection != null) {
+                    findNavController().navigate(navDirection)
+                }
+            }
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback.remove()
     }
 
     override fun getViewModel() = RegisterViewModel::class.java
